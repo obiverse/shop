@@ -9,7 +9,8 @@ Read [docs/PLAN.md](docs/PLAN.md) for the why.
 
 | I want to… | Do this |
 |---|---|
-| Add or edit a product from my phone | Open `/shop/admin/`, sign in with your GitHub token, edit, Save. Then someone runs `pnpm ship`. |
+| Edit products on this laptop (no GitHub login) | `pnpm admin` → Chrome opens the editor → **Work with Local Repository** → pick this `obiverse.shop` folder → edit, Save → `pnpm ship`. Ship commits your edits and publishes. |
+| Edit products from a phone | `obiverse.github.io/shop/admin/` → **Sign In Using Access Token** (needs a GitHub account with access). Then `pnpm ship` on the laptop. |
 | Add a product on a laptop | Make `src/content/products/<slug>/index.md` (copy a neighbour) and put the photos beside it. |
 | Turn a phone photo into a catalogue shot | `pnpm studio ~/Downloads/IMG_1234.HEIC <slug> "#FFE6CC" "#FFAE6B" floor -6`: product cut out, graded, on a colour-matched backdrop (light → deep) with a tinted shadow; use `reflect` for bottles and boxes. Also writes an enhanced original and the transparent `cutout.webp`. Needs macOS. Pick colours from the product's packaging. |
 | Change the home banners | Each house's `banner` (kicker, title, text, button); `{from}` becomes the lowest current price. |
@@ -49,6 +50,20 @@ scripts/ship.sh       build + push to gh-pages
 scripts/studio/       Apple Vision cut-out + studio compositor
 assets/products/      original photos and fliers (source material, not published)
 ```
+
+## If you lose access to GitHub
+
+Shipping keeps working from this Mac: `pnpm ship` uses the GitHub CLI's saved login (`gh auth status`), and
+`pnpm admin` needs no login at all. To get the account back:
+
+1. **Recovery codes.** At github.com/login, after the password step choose *Use a recovery code*
+   (the `github-recovery-codes.txt` you downloaded when you set up 2FA).
+2. **A device still signed in.** Any browser or the GitHub mobile app that's still logged in can add a new
+   authenticator under *Settings → Password and authentication*.
+3. **Account recovery.** On the 2FA screen, *Recover your account*. GitHub verifies you and restores access
+   (usually 1–3 business days). Do this now so it's running.
+4. Afterwards: add a passkey **and** an authenticator, save new recovery codes somewhere off the phone,
+   and add a trusted teammate as a collaborator so the shop never depends on one phone.
 
 ## Team access to the editor
 

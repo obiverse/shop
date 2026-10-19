@@ -1,98 +1,213 @@
 ---
 import Shell from "../layouts/Shell.astro";
+import Icon from "../components/Icon.astro";
 import { href } from "../lib/shop";
+const areas = ["Ugep", "Calabar", "Lagos", "Abuja", "Port Harcourt", "Uyo", "Other"];
 ---
 <Shell title="Cart" tab="cart">
-  <div class="page-title"><h1>Your cart</h1></div>
-  <div id="who" hidden>
-    <div class="who">
-      <label class="field">Your name<input name="name" autocomplete="name" placeholder="So we know who's writing" /></label>
-      <label class="field">Delivery or notes<textarea name="note" placeholder="Area / city, when you need it, gift wrap…"></textarea></label>
+  <div class="page-title"><h1>Your bag</h1></div>
+  <div class="seg" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="cart">Cart <span id="n-cart"></span></button>
+    <button role="tab" aria-selected="false" data-tab="orders">Orders <span id="n-orders"></span></button>
+  </div>
+
+  <div id="shared" class="notice ok" hidden></div>
+
+  <section id="tab-cart">
+    <div id="out" aria-live="polite"></div>
+
+    <div id="checkout" hidden>
+      <section class="who">
+        <h3 style="grid-column:1/-1">1 · Where should it go?</h3>
+        <div class="chips" style="grid-column:1/-1;margin:0;padding:0" role="radiogroup" aria-label="Delivery area">
+          {areas.map((a) => <button class="chip" type="button" data-area={a} aria-pressed="false">{a}</button>)}
+        </div>
+        <label class="field">Your name<input name="name" autocomplete="name" placeholder="So we know who's writing" /></label>
+        <label class="field">Address or notes<textarea name="note" placeholder="Street / landmark, when you need it, gift wrap…"></textarea></label>
+      </section>
+      <section class="who send-box">
+        <h3 style="grid-column:1/-1">2 · Send your order</h3>
+        <p class="muted" style="grid-column:1/-1;font-size:.84rem;font-weight:600">💬 Each house gets its own WhatsApp message with an order code. Nothing is charged here; we confirm price, delivery and payment with you first.</p>
+        <div id="send" style="grid-column:1/-1;display:grid;gap:10px"></div>
+        <button class="btn ghost" id="share" type="button" style="grid-column:1/-1"><Icon name="share" />Share this cart</button>
+      </section>
     </div>
-    <p class="muted" style="font-size:.84rem;font-weight:600;grid-column:1/-1">💬 Each house gets its own WhatsApp message with an order code. Nothing is charged here; we confirm everything with you first.</p>
-  </div>
 
-  <div id="out" aria-live="polite"><p class="muted">Pricing your cart…</p></div>
+    <div class="empty" id="empty" hidden>
+      <div class="art">🛍️</div>
+      <h2>Your cart is empty</h2>
+      <p>Add slippers, perfumes or chairs, then send the whole thing to us on WhatsApp.</p>
+      <a class="btn brand" href={href()}>Start shopping</a>
+    </div>
 
-  <div class="empty" id="empty" hidden>
-    <div class="art">🛍️</div>
-    <h2>Your cart is empty</h2>
-    <p>Add slippers, perfumes or chairs, then send the whole thing to us on WhatsApp.</p>
-    <a class="btn brand" href={href()}>Start shopping</a>
-  </div>
+    <section class="sec" id="more" hidden>
+      <div class="sechead"><h2>Add something else</h2></div>
+      <div class="rail" id="more-rail"></div>
+    </section>
+  </section>
 
-  <div class="notice ok" id="sent" hidden>
-    <span id="sent-msg"></span>
-    <div class="actions"><button class="btn" id="clear-sent">Yes, clear them</button><button class="btn ghost" id="keep">Keep for now</button></div>
-  </div>
+  <section id="tab-orders" hidden>
+    <div id="orders"></div>
+  </section>
 </Shell>
 
 <script>
-  import { cart, profile } from "../scripts/store";
-  import { load } from "../scripts/ledger";
+  import { cart, profile, orders, type Item, type Order } from "../scripts/store";
+  import { load, money, encode, decode, today } from "../scripts/ledger";
   import { groups } from "../scripts/render";
-  import { buzz } from "../scripts/app";
+  import { buzz, toast, confetti } from "../scripts/app";
 
-  const out = document.getElementById("out")!;
-  const who = document.getElementById("who")!;
-  const empty = document.getElementById("empty")!;
-  const sent = document.getElementById("sent")!;
+  const $ = (id: string) => document.getElementById(id)!;
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
   const name = document.querySelector<HTMLInputElement>("[name=name]")!;
   const note = document.querySelector<HTMLTextAreaElement>("[name=note]")!;
   const verify = new URL(`${import.meta.env.BASE_URL}order/`, location.origin).href;
-  let lastSent = "";
+  const base = import.meta.env.BASE_URL;
 
-  const p = profile.get();
-  name.value = p.name;
-  note.value = p.note;
-  const keep = () => profile.set({ name: name.value, note: note.value });
+  // ── tabs
+  const tabs = document.querySelectorAll<HTMLButtonElement>("[data-tab]");
+  const show = (t: string) => {
+    tabs.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === t)));
+    $("tab-cart").hidden = t !== "cart";
+    $("tab-orders").hidden = t !== "orders";
+    if (t === "orders") drawOrders();
+  };
+  tabs.forEach((b) => (b.onclick = () => show(b.dataset.tab!)));
+
+  // ── details, remembered on the phone
+  const me = profile.get();
+  name.value = me.name; note.value = me.note;
+  let area = me.area;
+  const chips = document.querySelectorAll<HTMLButtonElement>("[data-area]");
+  const paint = () => chips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.area === area)));
+  chips.forEach((c) => (c.onclick = () => { area = c.dataset.area!; buzz(); paint(); keep(); }));
+  paint();
+  const keep = () => profile.set({ name: name.value, note: note.value, area });
   name.addEventListener("input", keep);
   note.addEventListener("input", keep);
+  const fullNote = () => [area && `Deliver to: ${area}`, note.value.trim()].filter(Boolean).join(" · ");
 
+  // ── a cart someone shared: #add=<encoded>
+  async function shared() {
+    const m = location.hash.match(/add=([\w-]+)/);
+    if (!m) return;
+    await load();
+    const items = decode(m[1]);
+    if (!items.length) return;
+    const box = $("shared");
+    box.hidden = false;
+    box.innerHTML = `🎁 Someone shared a cart with you · ${items.length} item${items.length > 1 ? "s" : ""}<div class="actions"><button class="btn brand" id="take">Add to my cart</button><button class="btn ghost" id="skip">No thanks</button></div>`;
+    $("take").onclick = () => { items.forEach((i) => cart.add(i)); box.hidden = true; history.replaceState(null, "", location.pathname); confetti(); toast("Added to your cart"); };
+    $("skip").onclick = () => { box.hidden = true; history.replaceState(null, "", location.pathname); };
+  }
+
+  // ── the cart
   async function draw() {
     const items = cart.all();
-    empty.hidden = items.length > 0;
-    who.hidden = items.length === 0;
-    if (!items.length) { out.innerHTML = ""; return; }
+    $("n-cart").textContent = items.length ? String(items.length) : "";
+    $("n-orders").textContent = orders.all().length ? String(orders.all().length) : "";
+    $("empty").hidden = items.length > 0;
+    $("checkout").hidden = items.length === 0;
+    if (!items.length) { $("out").innerHTML = ""; more([]); return; }
     try {
       const { ledger, catalog } = await load();
-      out.innerHTML = groups(ledger.quote(items), catalog, { edit: true });
+      const q = ledger.quote(items);
+      $("out").innerHTML = groups(q, catalog, { edit: true });
+      $("send").innerHTML = q.houses.map((h) => `<button class="btn wa" data-send="${h.house}" ${h.items ? "" : "disabled"}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"/></svg>
+        Send to ${esc(h.name)} · ${money(h.total, h.currency)}</button>`).join("");
+      more(items.map((i) => i.id));
     } catch {
-      out.innerHTML = `<div class="notice">Couldn't load prices. Check your connection and try again.</div>`;
+      $("out").innerHTML = `<div class="notice">Couldn't load prices. Check your connection and try again.</div>`;
     }
   }
 
-  out.addEventListener("click", async (e) => {
-    const b = (e.target as HTMLElement).closest<HTMLButtonElement>("button");
+  // cross-sell: featured things from houses not yet in the cart, then anything else
+  async function more(inCart: string[]) {
+    const { catalog } = await load();
+    const houses = new Set(catalog.products.filter((p) => inCart.includes(p.id)).map((p) => p.house));
+    const picks = [...catalog.products.filter((p) => !houses.has(p.house)), ...catalog.products.filter((p) => houses.has(p.house) && !inCart.includes(p.id))]
+      .filter((p) => !inCart.includes(p.id)).slice(0, 8);
+    $("more").hidden = !picks.length;
+    $("more-rail").innerHTML = picks.map((p) => {
+      const h = catalog.houses.find((x) => x.id === p.house)!;
+      const live = p.sale && (!p.sale.ends || p.sale.ends >= today());
+      return `<a class="card" href="${p.url}" style="${p.tint ? `--tint:${p.tint}` : ""}"><div class="ph"><img src="${p.thumb}" alt="" loading="lazy">
+        ${p.stock !== "out" ? `<button class="quick" data-quick="${p.id}" aria-label="Quick add ${esc(p.title)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>` : ""}</div>
+        <div class="m"><span class="house">${esc(h.name)}</span><span class="t">${esc(p.title)}</span>
+        <div class="pr"><span class="now ${live ? "hot" : ""}">${money(live ? p.sale!.price : p.price, h.currency)}</span>${p.mode === "rent" ? `<span class="per">/day</span>` : ""}${live ? `<s>${money(p.price, h.currency)}</s>` : ""}</div></div></a>`;
+    }).join("");
+  }
+
+  $("out").addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>("button[data-i]");
     if (!b) return;
     const items = cart.all();
-    if (b.dataset.i) {
-      const i = Number(b.dataset.i);
-      if (b.dataset.d === "x") items.splice(i, 1);
-      else items[i].qty = Math.max(0, items[i].qty + Number(b.dataset.d));
-      buzz();
-      cart.set(items);
+    const i = Number(b.dataset.i);
+    if (b.dataset.d === "x") items.splice(i, 1);
+    else items[i].qty = Math.max(0, items[i].qty + Number(b.dataset.d));
+    buzz();
+    cart.set(items);
+  });
+
+  // ── send one house's order, remember it, celebrate, and offer to clear those items
+  $("send").addEventListener("click", async (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-send]");
+    if (!b) return;
+    if (!area) { document.querySelector(".who")!.scrollIntoView({ behavior: "smooth", block: "center" }); toast("Choose where it should go"); return; }
+    const { ledger, catalog } = await load();
+    const house = catalog.houses.find((h) => h.id === b.dataset.send)!;
+    const items = cart.all();
+    const mine = items.filter((i) => catalog.products.find((p) => p.id === i.id)?.house === house.id);
+    const q = ledger.quote(mine);
+    const total = q.houses[0];
+    const text = ledger.message(mine, house.id, verify, name.value, fullNote());
+    open(`https://wa.me/${house.whatsapp}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+    orders.add({ code: total.code, house: house.id, name: house.name, at: Date.now(), total: money(total.total, total.currency), items: mine, wa: house.whatsapp });
+    confetti();
+    cart.set(items.filter((i) => !mine.includes(i)));
+    toast(`Order ${total.code} sent 🎉`);
+    setTimeout(() => show("orders"), 900);
+  });
+
+  $("share").addEventListener("click", async () => {
+    await load();
+    const url = new URL(`${base}cart/#add=${encode(cart.all())}`, location.origin).href;
+    if (navigator.share) navigator.share({ title: "My Obiverse Shop cart", text: "Here's my cart:", url }).catch(() => {});
+    else { await navigator.clipboard?.writeText(url); toast("Cart link copied"); }
+  });
+
+  // ── order history
+  async function drawOrders() {
+    const list = orders.all();
+    if (!list.length) {
+      $("orders").innerHTML = `<div class="empty"><div class="art">📦</div><h2>No orders yet</h2><p>Orders you send on WhatsApp appear here, so you can check them or buy again.</p></div>`;
       return;
     }
-    if (b.dataset.send) {
-      const { ledger, catalog } = await load();
-      const house = catalog.houses.find((h) => h.id === b.dataset.send)!;
-      const mine = items.filter((i) => catalog.products.find((p) => p.id === i.id)?.house === house.id);
-      const text = ledger.message(mine, house.id, verify, name.value, note.value);
-      open(`https://wa.me/${house.whatsapp}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
-      lastSent = house.id;
-      document.getElementById("sent-msg")!.textContent = `Sent to ${house.name}? Clear those items from your cart once they've replied.`;
-      sent.hidden = false;
-    }
-  });
-
-  document.getElementById("clear-sent")!.addEventListener("click", async () => {
     const { catalog } = await load();
-    cart.clear(catalog.products.filter((p) => p.house === lastSent).map((p) => p.id));
-    sent.hidden = true;
+    const when = (t: number) => new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    $("orders").innerHTML = list.map((o, i) => `
+      <article class="order">
+        <header><b>${esc(o.name)}</b><span class="code">${o.code}</span></header>
+        <div class="thumbs">${o.items.map((it) => { const p = catalog.products.find((x) => x.id === it.id); return p ? `<a href="${p.url}" style="${p.tint ? `--tint:${p.tint}` : ""}"><img src="${p.thumb}" alt="${esc(p.title)}"></a>` : ""; }).join("")}</div>
+        <p class="muted">${when(o.at)} · ${o.items.reduce((n, it) => n + it.qty, 0)} item(s) · <b style="color:var(--ink)">${o.total}</b> · sent on WhatsApp</p>
+        <div class="actions"><button class="btn brand grow" data-again="${i}">Buy again</button><a class="btn ghost grow" target="_blank" rel="noopener" href="https://wa.me/${o.wa}?text=${encodeURIComponent(`Hello ${o.name}! About my order ${o.code}…`)}">Ask about it</a></div>
+      </article>`).join("");
+  }
+  $("orders").addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-again]");
+    if (!b) return;
+    orders.all()[Number(b.dataset.again)].items.forEach((i: Item) => cart.add(i));
+    toast("Added back to your cart", true);
+    show("cart");
   });
-  document.getElementById("keep")!.addEventListener("click", () => (sent.hidden = true));
 
-  addEventListener("shop:change", (e) => (e as CustomEvent).detail === "obv.cart" && draw());
+  addEventListener("shop:change", (e) => {
+    const k = (e as CustomEvent).detail;
+    if (k === "obv.cart" || k === "obv.orders") draw();
+    if (k === "obv.orders" && !$("tab-orders").hidden) drawOrders();
+  });
   draw();
+  shared();
+  if (location.hash === "#orders") show("orders");
 </script>

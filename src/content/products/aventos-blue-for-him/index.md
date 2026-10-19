@@ -11,7 +11,7 @@ options:
   - name: Size
     values: [25 ml]
 order: 6
-tags: [men, travel]
+tags: [men, fresh, bold, travel]
 ---
 
 Secret Amor eau de parfum, 25 ml. Fresh and invigorating, masculine, all-day confidence.

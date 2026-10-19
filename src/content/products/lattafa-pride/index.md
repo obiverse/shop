@@ -12,7 +12,7 @@ options:
     values: [60 ml]
 featured: true
 order: 1
-tags: [unisex, arabian]
+tags: [unisex, warm, arabian]
 ---
 
 Eau de parfum, 60 ml. Rich, long-lasting Arabian fragrance for every occasion.

@@ -11,7 +11,7 @@ options:
   - name: Size
     values: [50 ml]
 order: 7
-tags: [women, everyday]
+tags: [women, fresh, everyday]
 ---
 
 Eau de parfum, 50 ml. Fresh floral scent, long lasting, everyday use.

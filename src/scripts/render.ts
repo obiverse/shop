@@ -4,7 +4,7 @@ import { money, type Catalog, type Quote } from "./ledger";
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 const day = (s: string) => new Date(s + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 
-export function groups(q: Quote, cat: Catalog, opts: { edit: boolean }) {
+export function groups(q: Quote, cat: Catalog, opts: { edit: boolean; send?: boolean }) {
   return q.houses.map((h) => {
     const house = cat.houses.find((x) => x.id === h.house)!;
     const lines = q.lines.map((l, i) => ({ l, i })).filter(({ l }) => l.house === h.house);
@@ -31,7 +31,7 @@ export function groups(q: Quote, cat: Catalog, opts: { edit: boolean }) {
     <div class="tot"><span>Total</span><span>${money(h.total, h.currency)}</span></div>
     <div class="muted" style="font-size:.85rem"><span>Delivery is agreed with you on WhatsApp.</span></div>
   </div>
-  ${opts.edit ? `<footer><button class="btn wa" data-send="${h.house}" ${h.items ? "" : "disabled"}>
+  ${opts.send ? `<footer><button class="btn wa" data-send="${h.house}" ${h.items ? "" : "disabled"}>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z"/></svg>Send to ${esc(h.name)} on WhatsApp</button></footer>` : ""}
 </section>`;
   }).join("");

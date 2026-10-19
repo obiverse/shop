@@ -138,9 +138,9 @@ const perks = rent
 </Shell>
 
 <script>
-  import { cart, profile, type Item } from "../../scripts/store";
+  import { cart, profile, viewed, orders, type Item } from "../../scripts/store";
   import { load, money } from "../../scripts/ledger";
-  import { toast, buzz, fly } from "../../scripts/app";
+  import { toast, buzz, fly, confetti } from "../../scripts/app";
 
   const art = document.querySelector<HTMLElement>(".pdp")!;
   const { id, unit, cur, house, wa } = art.dataset as Record<string, string>;
@@ -150,6 +150,7 @@ const perks = rent
   const btn = document.getElementById("addbtn") as HTMLButtonElement;
   const avail = document.getElementById("avail");
   const estimate = document.getElementById("estimate");
+  viewed.push(id);
   const qtyNow = () => Math.max(1, Math.min(Number(qtyEl.max), Math.round(Number(qtyEl.value) || 1)));
 
   // Back goes back when they came from the shop; otherwise home.
@@ -232,9 +233,14 @@ const perks = rent
   document.getElementById("buynow")!.addEventListener("click", async () => {
     const item = await chosen();
     if (!item) return;
-    const { ledger } = await load();
+    const { ledger, catalog } = await load();
     const me = profile.get();
-    const text = ledger.message([item], house, new URL(`${import.meta.env.BASE_URL}order/`, location.origin).href, me.name, me.note);
+    const note = [me.area && `Deliver to: ${me.area}`, me.note].filter(Boolean).join(" · ");
+    const text = ledger.message([item], house, new URL(`${import.meta.env.BASE_URL}order/`, location.origin).href, me.name, note);
     open(`https://wa.me/${wa}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+    const t = (ledger.quote([item]) as { houses: { code: string; total: number; currency: string }[] }).houses[0];
+    orders.add({ code: t.code, house, name: catalog.houses.find((h) => h.id === house)!.name, at: Date.now(), total: money(t.total, t.currency), items: [item], wa });
+    confetti();
+    toast(`Order ${t.code} sent 🎉`);
   });
 </script>

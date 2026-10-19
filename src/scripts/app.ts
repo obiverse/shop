@@ -33,6 +33,24 @@ export function fly(img: HTMLImageElement | null | undefined) {
     { duration: 700, easing: "cubic-bezier(.5,0,.75,1)" },
   ).finished.then(() => { ghost.remove(); bump(); });
 }
+/** A burst of brand-coloured confetti from the top of the screen. */
+export function confetti() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const colors = ["#ff6a00", "#ffc21a", "#f0283c", "#1fbd5a", "#3a7bfd", "#b4237d"];
+  for (let i = 0; i < 70; i++) {
+    const c = document.createElement("i");
+    c.className = "confetti";
+    const w = 6 + Math.random() * 6;
+    Object.assign(c.style, { left: `${50 + (Math.random() - 0.5) * 30}vw`, width: `${w}px`, height: `${w * (Math.random() > 0.5 ? 0.4 : 1)}px`, background: colors[i % colors.length], borderRadius: Math.random() > 0.6 ? "50%" : "2px" });
+    document.body.append(c);
+    const dx = (Math.random() - 0.5) * 520, up = 160 + Math.random() * 260, spin = (Math.random() - 0.5) * 1080;
+    c.animate(
+      [{ transform: "translate(0,0) rotate(0)", opacity: 1 }, { transform: `translate(${dx * 0.6}px, ${-up}px) rotate(${spin / 2}deg)`, opacity: 1, offset: 0.35 }, { transform: `translate(${dx}px, ${innerHeight * 0.75}px) rotate(${spin}deg)`, opacity: 0 }],
+      { duration: 1600 + Math.random() * 900, easing: "cubic-bezier(.2,.6,.4,1)" },
+    ).finished.then(() => c.remove());
+  }
+}
+
 function bump() {
   document.querySelectorAll<HTMLElement>("[data-cart-count]").forEach((c) => { c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump"); });
 }
@@ -75,7 +93,7 @@ function timers() {
 
 // ── taps: save, share, quick add, search
 document.addEventListener("click", async (e) => {
-  const el = (e.target as HTMLElement).closest<HTMLElement>("[data-save],[data-share],[data-quick],[data-search]");
+  const el = (e.target as HTMLElement).closest<HTMLElement>("[data-save],[data-share],[data-quick],[data-search],[data-finder]");
   if (!el) return;
   e.preventDefault();
   e.stopPropagation();
@@ -90,6 +108,8 @@ document.addEventListener("click", async (e) => {
     else { await navigator.clipboard?.writeText(url); toast("Link copied"); }
   } else if (el.dataset.quick) {
     quickAdd(el.dataset.quick, el.closest(".card")?.querySelector("img"));
+  } else if (el.hasAttribute("data-finder")) {
+    (await import("./finder")).openFinder();
   } else {
     openSearch();
   }

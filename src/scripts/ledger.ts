@@ -1,5 +1,5 @@
 // Loads the WASM ledger and today's catalogue once, on the pages that price things.
-import init, { Ledger, decode_cart, format_money } from "../ledger-pkg/ledger.js";
+import init, { Ledger, decode_cart, encode_cart, format_money } from "../ledger-pkg/ledger.js";
 import type { Item } from "./store";
 
 export type Catalog = {
@@ -27,3 +27,4 @@ export const today = () => new Date(Date.now() - new Date().getTimezoneOffset() 
 export const quote = async (items: Item[]) => (await load()).ledger.quote(items) as Quote;
 export const money = (minor: number, currency: string) => format_money(minor, currency);
 export const decode = (s: string) => decode_cart(s) as Item[];
+export const encode = (items: Item[]) => encode_cart(items);

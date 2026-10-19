@@ -31,10 +31,24 @@ const pick = (id: string) => ps.find((p) => p.id === id);
 const stories = [
   { label: "Deals", to: "?f=sale#all", img: await cut(pick("luxury-toe")), ring: "linear-gradient(135deg,#ff2d55,#ff8a00)" },
   ...(await Promise.all(hs.map(async (h) => ({ label: h.data.name.replace(/^Obiverse /, ""), to: `h/${h.id}/`, img: await cut(ps.find((p) => p.data.house.id === h.id && p.data.featured && p.data.cutout)), ring: h.data.gradient })))),
+  { label: "Scent finder", to: "#finder", img: await cut(pick("kay-ali-lovefest-burning-cherry")), ring: "linear-gradient(135deg,#ff5fa2,#7b2fbf)", finder: true },
   { label: "For him", to: "?f=tag:men#all", img: await cut(pick("urban-cross")), ring: "linear-gradient(135deg,#3a7bfd,#7b5cff)" },
   { label: "For her", to: "?f=tag:women#all", img: await cut(pick("kay-ali-lovefest-burning-cherry")), ring: "linear-gradient(135deg,#ff5fa2,#b4237d)" },
 ];
 const chairCut = await cut(chairs);
+
+// The Showroom: featured products with cut-outs, alternating houses so the wheel mixes colours.
+const featured = ps.filter((p) => p.data.cutout && (p.data.featured || p.data.mode === "rent"));
+const byHouse = hs.map((h) => featured.filter((p) => p.data.house.id === h.id));
+const mixed = Array.from({ length: Math.max(...byHouse.map((x) => x.length)) }, (_, i) => byHouse.map((x) => x[i])).flat().filter(Boolean) as typeof ps;
+const show = await Promise.all(mixed.slice(0, 10).map(async (p) => {
+  const h = houseOf(p), o = offer(p, h);
+  return {
+    id: p.id, img: (await getImage({ src: p.data.cutout!, width: 640, format: "webp" })).src, url: href(`p/${p.id}/`),
+    title: p.data.title, house: h.data.name, tint: p.data.tint ?? h.data.accent, rent: p.data.mode === "rent",
+    now: money(o?.now ?? p.data.price, h.data.currency), was: o ? money(o.was, h.data.currency) : "", off: o?.pct ?? 0, ends: o?.ends ?? "",
+  };
+}));
 const tags = [...new Set(ps.flatMap((p) => p.data.tags))].filter((t) => ["men", "women", "unisex", "events", "travel", "arabian"].includes(t));
 ---
 <Shell tab="shop">
@@ -43,9 +57,23 @@ const tags = [...new Set(ps.flatMap((p) => p.data.tags))].filter((t) => ["men", 
     <p>What are you shopping for today?</p>
   </section>
 
+  <section class="show" id="show" aria-label="Showroom" style={`--st:${show[0].tint}`}>
+    <div class="stage" id="stage"><img class="fallback" id="show-img" src={show[0].img} alt="" fetchpriority="high" /></div>
+    <span class="show-hint">✦ Spin the shelf</span>
+    <button class="show-nav prev" id="show-prev" aria-label="Previous product"><Icon name="back" /></button>
+    <button class="show-nav next" id="show-next" aria-label="Next product"><Icon name="chev" /></button>
+    <a class="show-card" id="show-card" href={show[0].url}>
+      <span class="k" id="show-house">{show[0].house}</span>
+      <b id="show-title">{show[0].title}</b>
+      <span class="pr"><span class:list={["now", { hot: show[0].was }]} id="show-now">{show[0].now}</span><s id="show-was">{show[0].was}</s></span>
+      <span class="go">View <Icon name="arrow" /></span>
+    </a>
+    <script type="application/json" id="show-data" set:html={JSON.stringify(show)} />
+  </section>
+
   <nav class="stories" aria-label="Categories">
     {stories.map((s) => (
-      <a class="story" href={href(s.to)} style={`--ring:${s.ring}`}>
+      <a class="story" href={href(s.to)} style={`--ring:${s.ring}`} data-finder={(s as any).finder ? "" : undefined}>
         <span class="ring"><span class="disc">{s.img ? <img src={s.img} alt="" loading="eager" /> : <span class="emo">🔥</span>}</span></span>
         {s.label}
       </a>
@@ -70,6 +98,11 @@ const tags = [...new Set(ps.flatMap((p) => p.data.tags))].filter((t) => ["men", 
     <div class="banner-dots" id="banner-dots">{banners.map((_, i) => <i class:list={{ on: i === 0 }} />)}</div>
   </section>
 
+  <section class="sec" id="recent" hidden>
+    <div class="sechead"><h2>Recently viewed</h2></div>
+    <div class="rail" id="recent-rail"></div>
+  </section>
+
   {deals.length > 0 && (
     <section class="sec" data-offer-only data-ends={dealEnds}>
       <div class="sechead">
@@ -83,6 +116,7 @@ const tags = [...new Set(ps.flatMap((p) => p.data.tags))].filter((t) => ["men", 
 
   <section class="sec">
     <div class="sechead"><h2>Perfumes from {money(nowPrice(perfumes[0]), "NGN")}</h2><a class="more" href={href("h/scents/")}>See all <Icon name="chev" /></a></div>
+    <button class="finder-cta" data-finder><span>✨</span><p><b>Not sure which scent?</b><small>Three taps and we'll find your match</small></p></button>
     <div class="rail">{perfumes.map((p) => <Card p={p} house={houseOf(p)} />)}</div>
   </section>
 
@@ -127,6 +161,55 @@ const tags = [...new Set(ps.flatMap((p) => p.data.tags))].filter((t) => ["men", 
     document.getElementById("hello")!.textContent = `${h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"}${name ? `, ${name}` : ""} 👋`;
   } catch {}
 
+  // ── Showroom: a 3D turntable on capable devices; a swipeable picture everywhere else.
+  type S = { id: string; img: string; url: string; title: string; house: string; tint: string; now: string; was: string; ends: string; rent: boolean };
+  const show: S[] = JSON.parse(document.getElementById("show-data")!.textContent!);
+  const sec = document.getElementById("show")!;
+  const $ = (id: string) => document.getElementById(id)!;
+  const day = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  let cur = 0;
+  function focus(i: number) {
+    cur = i;
+    const s = show[i];
+    const live = s.was && (!s.ends || s.ends >= day);
+    sec.style.setProperty("--st", s.tint);
+    ($("show-card") as HTMLAnchorElement).href = s.url;
+    $("show-house").textContent = s.house;
+    $("show-title").textContent = s.title;
+    $("show-now").textContent = s.now + (s.rent ? "/day" : "");
+    $("show-now").classList.toggle("hot", !!live);
+    $("show-was").textContent = live ? s.was : "";
+    $("show-card").animate([{ opacity: 0.4, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: "ease-out" });
+  }
+  const capable = (() => {
+    const n = navigator as any;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches || n.connection?.saveData || (n.deviceMemory ?? 4) < 2) return false;
+    try { return !!document.createElement("canvas").getContext("webgl2"); } catch { return false; }
+  })();
+  let wheel: { go(d: number): void } | null = null;
+  const fallback = $("show-img") as HTMLImageElement;
+  const spin = (d: number) => {
+    if (wheel) return wheel.go(d);
+    const i = (cur + d + show.length) % show.length;
+    fallback.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: `translateX(${-d * 30}px) scale(.96)` }], { duration: 160 }).finished.then(() => {
+      fallback.src = show[i].img;
+      fallback.animate([{ opacity: 0, transform: `translateX(${d * 30}px) scale(.96)` }, { opacity: 1, transform: "none" }], { duration: 220, easing: "ease-out" });
+    });
+    focus(i);
+  };
+  $("show-prev").onclick = () => spin(-1);
+  $("show-next").onclick = () => spin(1);
+  if (capable) {
+    import("../scripts/showroom").then(({ mount }) => {
+      wheel = mount($("stage"), show, focus);
+      sec.classList.add("live");
+    });
+  } else {
+    let x0 = 0;
+    fallback.addEventListener("pointerdown", (e) => (x0 = e.clientX));
+    fallback.addEventListener("pointerup", (e) => { const dx = e.clientX - x0; if (Math.abs(dx) > 30) spin(dx < 0 ? 1 : -1); else location.href = show[cur].url; });
+  }
+
   // Banner carousel: swipe, dots, gentle autoplay that stops once touched.
   const track = document.getElementById("banners")!;
   const dots = [...document.querySelectorAll("#banner-dots i")];
@@ -141,6 +224,17 @@ const tags = [...new Set(ps.flatMap((p) => p.data.tags))].filter((t) => ["men", 
     const next = at() + 1 > dots.length - visible ? 0 : at() + 1;
     track.scrollTo({ left: next * step(), behavior: "smooth" });
   }, 4500);
+
+  // Recently viewed: reuse the cards already on the page.
+  try {
+    const ids: string[] = JSON.parse(localStorage.getItem("obv.viewed") || "[]");
+    const rail = document.getElementById("recent-rail")!;
+    for (const id of ids) {
+      const card = document.querySelector<HTMLElement>(`#grid .card [data-save="${id}"]`)?.closest(".card");
+      if (card) rail.append(card.cloneNode(true));
+    }
+    if (rail.children.length) document.getElementById("recent")!.hidden = false;
+  } catch {}
 
   // Filters (also from ?f= so stories and "See all" can deep-link).
   const chips = document.querySelectorAll<HTMLButtonElement>(".chip[data-f]");

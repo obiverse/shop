@@ -12,7 +12,7 @@ options:
     values: [50 ml]
 featured: true
 order: 3
-tags: [women]
+tags: [women, sweet, bold]
 ---
 
 Eau de parfum, 50 ml. Long-lasting, elegant and feminine.

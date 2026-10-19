@@ -35,6 +35,19 @@ export const saved = {
 };
 
 export const profile = {
-  get: () => read<{ name: string; note: string }>("obv.profile", { name: "", note: "" }),
-  set: (p: { name: string; note: string }) => write("obv.profile", p),
+  get: () => ({ name: "", note: "", area: "", ...read<{ name?: string; note?: string; area?: string }>("obv.profile", {}) }),
+  set: (p: { name: string; note: string; area: string }) => write("obv.profile", p),
+};
+
+// Orders sent on WhatsApp, newest first: the phone's own order history ("Buy again", "Ask about it").
+export type Order = { code: string; house: string; name: string; at: number; total: string; items: Item[]; wa: string };
+export const orders = {
+  all: () => read<Order[]>("obv.orders", []),
+  add(o: Order) { write("obv.orders", [o, ...orders.all().filter((x) => x.code !== o.code)].slice(0, 30)); },
+};
+
+// Recently viewed product ids, newest first.
+export const viewed = {
+  all: () => read<string[]>("obv.viewed", []),
+  push(id: string) { write("obv.viewed", [id, ...viewed.all().filter((x) => x !== id)].slice(0, 12)); },
 };

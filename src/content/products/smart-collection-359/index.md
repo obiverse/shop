@@ -11,7 +11,7 @@ options:
   - name: Size
     values: [100 ml]
 order: 5
-tags: [men]
+tags: [men, bold, warm]
 ---
 
 Eau de parfum, 100 ml. Confident, masculine, refined.

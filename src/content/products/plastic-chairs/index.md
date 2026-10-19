@@ -2,7 +2,7 @@
 title: "Plastic Chairs"
 house: rentals
 mode: rent
-price: 300 # PLACEHOLDER — confirm (per chair, per day)
+price: 300 # per chair, per day; final price agreed on WhatsApp
 summary: "Quality chairs for your events and gatherings. Strong, clean, delivered on time. Rent as many as you need, by the day."
 images: [./1.jpg]
 cutout: ./cutout.webp

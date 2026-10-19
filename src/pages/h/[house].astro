@@ -25,6 +25,7 @@ const ends = promo?.ends && iso(promo.ends);
     )}
     {h.data.lineup && <Image src={h.data.lineup} alt="" widths={[600, 1000, 1400]} sizes="(min-width: 760px) 720px, 100vw" loading="eager" />}
   </section>
+  {h.id === "scents" && <section class="sec"><button class="finder-cta" data-finder><span>✨</span><p><b>Not sure which scent?</b><small>Three taps and we'll find your match</small></p></button></section>}
   <section class="sec">
     <div class="sechead"><h2>{ps.length} {ps.length === 1 ? "item" : "items"}</h2></div>
     <div class="grid">{ps.map((p, i) => <Card p={p} house={h} eager={i < 4} />)}</div>

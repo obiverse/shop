@@ -11,7 +11,7 @@ options:
   - name: Size
     values: [100 ml]
 order: 4
-tags: [women]
+tags: [women, sweet, warm]
 ---
 
 Eau de parfum, 100 ml. Rich fragrance, long lasting, premium quality.

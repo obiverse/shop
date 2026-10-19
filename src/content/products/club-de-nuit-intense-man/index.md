@@ -12,7 +12,7 @@ options:
     values: [50 ml]
 featured: true
 order: 2
-tags: [men]
+tags: [men, bold]
 ---
 
 Eau de parfum, 50 ml. Long lasting, bold scent, for men.
