@@ -37,8 +37,8 @@ is static, and the trade closes person to person, the way Sinbad's did.
 | D3 | **Git is the database. No GitHub Actions.** `pnpm ship` builds locally and force-pushes `dist/` to `gh-pages`. | Free on a public repo, nothing to run or pay for, every change has history and rollback. A handful of product lines doesn't need more. |
 | D4 | **Sveltia CMS at `/shop/admin`** (two static files) for phone editing. | Teammates sign in with a GitHub token, edit products, upload photos (auto-WebP). Saves are commits; publishing is `pnpm ship`. |
 | D5 | **The cart holds ids, never prices.** | A stale or tampered cart re-prices itself. |
-| D6 | **Houses are first-class.** Obi Sandals and Scent House each have their own WhatsApp number, story, accent, lineup and lookbook. | Two merchants, one shop. A mixed cart sends one message per house. |
-| D7 | **Rentals are a product mode** (`mode: rent`: per-day price, deposit, minimum days, booked ranges). | Same cart, same message. The ledger refuses clashing dates. A hidden template product (`beaded-ceremonial`) shows the shape. |
+| D6 | **Houses are first-class.** Obi Sandals, Scent House and Obiverse Assets (chair rentals, Ugep) each have their own WhatsApp number, story, accent, lineup and lookbook. | Three lines of trade, one shop. A mixed cart sends one message per house. |
+| D7 | **Rentals are a product mode with stock** (`mode: rent`: price per unit per day, `units: 100` chairs, deposit, minimum days, bookings with `qty`). | The ledger checks every day of the range: 100 chairs minus what is already out, across all cart lines. Same cart, same message. |
 | D8 | **Every product has its own URL with Open Graph tags + schema.org Product.** | WhatsApp forwarding is distribution. A forwarded link shows photo, name and price. |
 | D9 | **Verify link in every order.** | The team re-prices in one tap and never trusts edited message text. |
 | D10 | **The shop is an app.** Installable PWA with a bottom tab bar (Shop · Rent · Saved · Cart), offline catalogue and cart, install prompt + iOS hint, home-screen shortcuts, cross-page View Transitions, haptics, Web Share, automatic dark mode. | Feels like an app without an app store, and survives bad networks. |
@@ -67,7 +67,7 @@ Photos sell these products; 3D has to be real or not at all. For a flagship pair
 
 | Slice | What | Status |
 |---|---|---|
-| **0.1** | Storefront, cart, WASM ledger, WhatsApp send, verify page, PWA, real catalogue (5 slippers, 8 perfumes), studio pipeline. | ✅ built and tested (mobile e2e, both houses, rental clash) |
+| **0.1** | Storefront, cart, WASM ledger, WhatsApp send, verify page, PWA, real catalogue (5 slippers, 8 perfumes, 100 chairs), studio pipeline, GPS-stripped photos. | ✅ built and tested (9 ledger tests; mobile e2e across all three houses) |
 | **0.2** | Go live: create `obiverse/shop`, push, enable Pages on `gh-pages`. Confirm prices and names. | ← next |
 | **0.3** | Team editing: Sveltia tokens for the team, first product added from a phone. | |
 | **0.4** | Auto-ship cron on the droplet. Real rentals. | |
@@ -76,7 +76,7 @@ Photos sell these products; 3D has to be real or not at all. For a flagship pair
 ## What only you can do
 
 1. **Prices.** Every product carries a `# PLACEHOLDER — confirm` price. Send the real list.
-2. **Names.** "Obi Sandals" and "Scent House" are working names. Also: does the perfume house have its own WhatsApp number?
+2. **Names.** "Obi Sandals" and "Scent House" are working names (Obiverse Assets is from its flier). Does the perfume house have its own WhatsApp number?
 3. **Sizes.** Slippers list 40–46. Correct this if the range differs.
-4. **Rentals.** What exactly will be rented, the deposit rule, and the minimum days.
+4. **Chairs.** Price per chair per day (placeholder ₦300), any deposit, whether blue/purple are counted separately, and a real photo of the stacks (`pnpm studio`). Drop the chair flier into `assets/products/` for the lookbook.
 5. **Say go** on creating the public repo `obiverse/shop` and the first ship.
