@@ -2,7 +2,7 @@
 title: "Signature"
 house: sandals
 mode: buy
-price: 30000 # PLACEHOLDER — confirm
+price: 27000 # regular price; the house launch offer takes 15% off
 summary: "Bold and classy. Croc-texture strap with a gold ring buckle on a cognac footbed."
 images: [./1.jpg, ./photo-1.jpg]
 options:

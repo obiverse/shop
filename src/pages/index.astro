@@ -3,7 +3,7 @@ import Shell from "../layouts/Shell.astro";
 import Card from "../components/Card.astro";
 import Icon from "../components/Icon.astro";
 import { Image } from "astro:assets";
-import { houses, products, href, shop } from "../lib/shop";
+import { houses, products, href, shop, iso, endsLabel } from "../lib/shop";
 
 const hs = await houses();
 const ps = await products();
@@ -23,6 +23,11 @@ const byId = Object.fromEntries(hs.map((h) => [h.id, h]));
         <div class="k">House</div>
         <h2>{h.data.name}</h2>
         <p>{h.data.tagline}</p>
+        {h.data.promo && (!h.data.promo.ends || iso(h.data.promo.ends) >= iso(new Date())) && (
+          <span class="promo" data-offer-only data-ends={h.data.promo.ends && iso(h.data.promo.ends)}>
+            {h.data.promo.label} · {h.data.promo.percent}% off{h.data.promo.ends && ` · ends ${endsLabel(iso(h.data.promo.ends))}`}
+          </span>
+        )}
         {h.data.lineup && <Image class="lineup" src={h.data.lineup} alt="" widths={[480, 800, 1200]} sizes="(min-width: 700px) 560px, 100vw" loading="eager" />}
       </a>
     ))}

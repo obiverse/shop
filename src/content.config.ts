@@ -14,6 +14,8 @@ const houses = defineCollection({
     accent: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     lineup: image().optional(), // transparent row of products for the home card
     lookbook: image().optional(), // the house flier
+    // A house-wide, time-boxed offer, e.g. 15% off every slipper until 30 Nov. Products can override with their own `sale`.
+    promo: z.object({ label: z.string().default("Sale"), percent: z.number().int().min(1).max(90), ends: z.coerce.date().optional() }).optional(),
     order: z.number().default(0),
   }),
 });
@@ -29,7 +31,9 @@ const products = defineCollection({
       house: reference("houses"),
       mode: z.enum(["buy", "rent"]).default("buy"),
       price: z.number().positive(), // major units; per day when renting
-      compare_at: z.number().positive().optional(),
+      // This product's own offer: a set price or a percent off, optionally ending on a date.
+      sale: z.object({ price: z.number().positive().optional(), percent: z.number().int().min(1).max(90).optional(), ends: z.coerce.date().optional(), label: z.string().optional() }).optional(),
+      badge: z.string().max(18).optional(), // "Bestseller", "New" — only if true
       summary: z.string().max(160),
       images: z.array(image()).min(1),
       model: z.string().optional(),

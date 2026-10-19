@@ -2,7 +2,7 @@
 title: "Classic Slide"
 house: sandals
 mode: buy
-price: 25000 # PLACEHOLDER — confirm
+price: 22000 # regular price; the house launch offer takes 15% off
 summary: "Simple and elegant. A wide leather band with a slim gold bar, on a cushioned stitched sole."
 images: [./1.jpg, ./photo-1.jpg]
 options:

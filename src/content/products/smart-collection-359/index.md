@@ -2,7 +2,7 @@
 title: "Smart Collection No. 359"
 house: scents
 mode: buy
-price: 15000 # PLACEHOLDER — confirm
+price: 14500
 summary: "Dress your scent. Confident and masculine, with a refined finish. 100 ml."
 images: [./1.jpg, ./photo-1.jpg]
 options:

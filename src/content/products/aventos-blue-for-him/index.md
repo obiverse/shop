@@ -2,7 +2,7 @@
 title: "Aventos Blue for Him"
 house: scents
 mode: buy
-price: 8000 # PLACEHOLDER — confirm
+price: 8000
 summary: "Bold, fresh, masculine. Fresh and invigorating all day. 25 ml, perfect for travel."
 images: [./1.jpg, ./photo-1.jpg]
 options:

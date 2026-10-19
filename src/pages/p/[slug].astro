@@ -4,7 +4,7 @@ import { render } from "astro:content";
 import Shell from "../../layouts/Shell.astro";
 import Icon from "../../components/Icon.astro";
 import Card from "../../components/Card.astro";
-import { products, houseOf, href, money, stockLabel, iso, type Product } from "../../lib/shop";
+import { products, houseOf, href, money, stockLabel, iso, offer, endsLabel, type Product } from "../../lib/shop";
 
 export async function getStaticPaths() {
   return (await products()).map((p) => ({ params: { slug: p.id }, props: { p } }));
@@ -15,7 +15,8 @@ const d = p.data;
 const cur = h.data.currency;
 const { Content } = await render(p);
 const rent = d.mode === "rent";
-const priceText = money(d.price, cur) + (rent ? " / day" : "");
+const o = offer(p, h);
+const priceText = money(o?.now ?? d.price, cur) + (rent ? " / day" : "") + (o ? ` (was ${money(o.was, cur)})` : "");
 const og = await getImage({ src: d.images[0], width: 1200, height: 630, fit: "cover", format: "jpeg" });
 const more = (await products((x) => x.data.house.id === h.id && x.id !== p.id)).slice(0, 4);
 const today = new Date().toISOString().slice(0, 10);
@@ -28,12 +29,12 @@ const max = rent ? (units ?? 1) : 20;
 <Shell title={d.title} description={`${priceText} · ${d.summary}`} image={og.src} back>
   <Fragment slot="head">
     <meta property="og:type" content="product" />
-    <meta property="product:price:amount" content={String(d.price)} />
+    <meta property="product:price:amount" content={String(o?.now ?? d.price)} />
     <meta property="product:price:currency" content={cur} />
     <script type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org", "@type": "Product", name: d.title, description: d.summary,
       image: new URL(og.src, Astro.site).href, brand: h.data.name,
-      offers: { "@type": "Offer", price: d.price, priceCurrency: cur, availability: `https://schema.org/${d.stock === "out" ? "OutOfStock" : d.stock === "made_to_order" ? "PreOrder" : "InStock"}` },
+      offers: { "@type": "Offer", price: o?.now ?? d.price, priceCurrency: cur, ...(o?.ends && { priceValidUntil: o.ends }), availability: `https://schema.org/${d.stock === "out" ? "OutOfStock" : d.stock === "made_to_order" ? "PreOrder" : "InStock"}` },
     })} />
     {d.model && <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.4.0/dist/model-viewer.min.js" />}
   </Fragment>
@@ -54,10 +55,16 @@ const max = rent ? (units ?? 1) : 20;
     <div class="info">
       <a class="k" href={href(`h/${h.id}/`)}>{h.data.name}</a>
       <h1>{d.title}</h1>
-      <div class="price">
-        {money(d.price, cur)}{rent && <small> per {unit} per day</small>}
-        {d.compare_at && <s>{money(d.compare_at, cur)}</s>}
+      <div class="price" data-ends={o?.ends} data-regular={o && money(d.price, cur)}>
+        <span class:list={["now", { hot: o }]}>{money(o?.now ?? d.price, cur)}</span>{rent && <small> per {unit} per day</small>}
+        {o && <s data-offer-only>{money(o.was, cur)}</s>}
+        {o && <span class="off" data-offer-only>−{o.pct}%</span>}
       </div>
+      {o && (
+        <div class="offer" data-offer-only data-ends={o.ends}>
+          <b>{o.label}</b>{o.ends && <> · ends {endsLabel(o.ends)} <span data-days-left={o.ends}></span></>} · you save {money(o.was - o.now, cur)}
+        </div>
+      )}
       {rent ? (
         <div class="stock" data-s="in">
           {units ? `${units} ${unit}s available · ` : ""}{d.rent?.deposit ? `refundable deposit ${money(d.rent.deposit, cur)} each · ` : ""}minimum {d.rent?.min_days ?? 1} day{(d.rent?.min_days ?? 1) > 1 ? "s" : ""}

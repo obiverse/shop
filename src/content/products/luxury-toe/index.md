@@ -2,7 +2,7 @@
 title: "Luxury Toe"
 house: sandals
 mode: buy
-price: 35000 # PLACEHOLDER — confirm
+price: 29000 # regular price; the house launch offer takes 15% off
 summary: "A distinctive look. Glossy croc band and toe ring with gold hardware and white contrast stitching."
 images: [./1.jpg, ./photo-1.jpg, ./photo-2.jpg]
 options:

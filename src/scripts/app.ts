@@ -42,6 +42,26 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+// Offers end on their date even if nobody has rebuilt the site: show the regular price again.
+function offers() {
+  const now = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  document.querySelectorAll<HTMLElement>("[data-ends]").forEach((el) => {
+    const ends = el.dataset.ends!;
+    if (!ends || ends >= now) return;
+    if (el.dataset.regular) {
+      const n = el.querySelector<HTMLElement>(".now");
+      if (n) { n.textContent = el.dataset.regular; n.classList.remove("hot"); }
+    }
+    el.querySelectorAll<HTMLElement>("[data-offer-only]").forEach((x) => (x.hidden = true));
+    if (el.hasAttribute("data-offer-only")) el.hidden = true;
+  });
+  document.querySelectorAll<HTMLElement>("[data-days-left]").forEach((el) => {
+    const left = Math.round((Date.parse(el.dataset.daysLeft!) - Date.parse(now)) / 86_400_000) + 1;
+    el.textContent = left <= 1 ? "· last day!" : left <= 14 ? `· ${left} days left` : "";
+  });
+}
+offers();
+
 addEventListener("shop:change", () => { badge(); hearts(); });
 addEventListener("storage", () => { badge(); hearts(); });
 badge();

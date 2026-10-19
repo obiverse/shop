@@ -13,12 +13,13 @@ export function groups(q: Quote, cat: Catalog, opts: { edit: boolean }) {
   ${lines.map(({ l, i }) => {
     const p = cat.products.find((x) => x.id === l.id);
     const detail = [l.opt, l.mode === "rent" && l.from && l.to ? `${day(l.from)} → ${day(l.to)} · ${l.days} day${l.days > 1 ? "s" : ""}` : "", l.mode === "rent" ? `${money(l.unit, h.currency)}/day` : `${money(l.unit, h.currency)} each`].filter(Boolean).join(" · ");
+    const was = l.was && !l.error ? `<s class="d">${money(l.was * l.qty * Math.max(1, l.days), h.currency)}</s>` : "";
     return `<div class="line">
     <a href="${p?.url ?? "#"}"><img src="${p?.thumb ?? ""}" alt="" width="72" height="90" loading="lazy"></a>
     <div><a class="t" href="${p?.url ?? "#"}">${esc(l.title || l.id)}</a><div class="d">${esc(detail)}</div>
       ${l.deposit ? `<div class="d">Refundable deposit ${money(l.deposit, h.currency)}</div>` : ""}
       ${l.error ? `<div class="e">${esc(l.error)}</div>` : ""}</div>
-    <div class="r">${l.error ? "—" : money(l.total, h.currency)}
+    <div class="r"><span>${l.error ? "—" : money(l.total, h.currency)}${was}</span>
       ${opts.edit ? `<div class="qty"><button data-i="${i}" data-d="-1" aria-label="Fewer">−</button><output>${l.qty}</output><button data-i="${i}" data-d="1" aria-label="More">+</button></div>
       <button class="x" data-i="${i}" data-d="x">Remove</button>` : `<span class="d">× ${l.qty}</span>`}</div>
   </div>`;
@@ -26,6 +27,7 @@ export function groups(q: Quote, cat: Catalog, opts: { edit: boolean }) {
   <div class="sum">
     <div><span>Subtotal</span><span>${money(h.subtotal, h.currency)}</span></div>
     ${h.deposits ? `<div><span>Refundable deposits</span><span>${money(h.deposits, h.currency)}</span></div>` : ""}
+    ${h.saved ? `<div class="save"><span>You save</span><span>${money(h.saved, h.currency)}</span></div>` : ""}
     <div class="tot"><span>Total</span><span>${money(h.total, h.currency)}</span></div>
     <div class="muted" style="font-size:.85rem"><span>Delivery is agreed with you on WhatsApp.</span></div>
   </div>

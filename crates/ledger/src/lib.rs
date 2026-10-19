@@ -28,13 +28,23 @@ pub struct Product {
     pub price: u64,   // buy: per item · rent: per day
     #[serde(default)] pub stock: String,
     #[serde(default)] pub rent: Option<Rent>,
+    #[serde(default)] pub sale: Option<Sale>,
 }
+
+/// A real, time-boxed offer. After `ends` (inclusive) the regular price applies again.
+#[derive(Deserialize, Clone)]
+pub struct Sale { pub price: u64, #[serde(default)] pub ends: String }
 
 #[derive(Deserialize, Clone)]
 pub struct House { pub id: String, pub name: String, pub currency: String }
 
 #[derive(Deserialize)]
-pub struct Catalog { pub products: Vec<Product>, pub houses: Vec<House> }
+pub struct Catalog {
+    pub products: Vec<Product>,
+    pub houses: Vec<House>,
+    /// "YYYY-MM-DD" in the shopper's time zone; empty = treat every offer as running.
+    #[serde(default)] pub today: String,
+}
 
 #[derive(Deserialize, Serialize, Clone, Default)]
 pub struct Item {
@@ -49,14 +59,14 @@ pub struct Item {
 pub struct Line {
     pub id: String, pub title: String, pub house: String, pub mode: String,
     pub qty: u32, pub opt: String, pub from: String, pub to: String,
-    pub days: u32, pub unit: u64, pub deposit: u64, pub total: u64,
+    pub days: u32, pub unit: u64, pub was: u64, pub deposit: u64, pub total: u64, pub saved: u64,
     pub error: Option<String>,
 }
 
 #[derive(Serialize)]
 pub struct HouseTotal {
     pub house: String, pub name: String, pub currency: String,
-    pub items: u32, pub subtotal: u64, pub deposits: u64, pub total: u64, pub code: String,
+    pub items: u32, pub subtotal: u64, pub deposits: u64, pub total: u64, pub saved: u64, pub code: String,
 }
 
 #[derive(Serialize)]
@@ -103,6 +113,20 @@ pub fn check(from: &str, to: &str, qty: u32, r: &Rent) -> DateCheck {
 
 // ── pricing ───────────────────────────────────────────────────────────────
 
+/// (price now, regular price if an offer is running else 0).
+pub fn unit_price(p: &Product, today: &str) -> (u64, u64) {
+    match &p.sale {
+        Some(s) if s.price < p.price && (s.ends.is_empty() || today.is_empty() || today <= s.ends.as_str()) => (s.price, p.price),
+        _ => (p.price, 0),
+    }
+}
+
+/// `percent` off, rounded down to a multiple of `step` (e.g. ₦500 = 50_000 kobo) so prices stay tidy.
+pub fn percent_off(price: u64, percent: u32, step: u64) -> u64 {
+    let raw = price * (100 - percent.min(100) as u64) / 100;
+    if step == 0 { raw } else { raw / step * step }
+}
+
 pub fn price(cat: &Catalog, cart: &[Item]) -> Quote {
     let mut lines = Vec::new();
     for it in cart {
@@ -110,16 +134,19 @@ pub fn price(cat: &Catalog, cart: &[Item]) -> Quote {
         let Some(p) = cat.products.iter().find(|p| p.id == it.id) else {
             l.error = Some("No longer in the catalogue".into()); lines.push(l); continue;
         };
-        l.title = p.title.clone(); l.house = p.house.clone(); l.mode = p.mode.clone(); l.unit = p.price;
+        let (unit, was) = unit_price(p, &cat.today);
+        l.title = p.title.clone(); l.house = p.house.clone(); l.mode = p.mode.clone(); l.unit = unit; l.was = was;
         if p.stock == "out" { l.error = Some("Sold out".into()); }
         if p.mode == "rent" {
             let r = p.rent.clone().unwrap_or(Rent { deposit: 0, min_days: 1, units: None, booked: vec![] });
             let qty = cart.iter().filter(|o| o.id == it.id && o.from == it.from && o.to == it.to).map(|o| o.qty.max(1)).sum();
             let c = check(&it.from, &it.to, qty, &r);
             l.days = c.days; l.deposit = r.deposit * l.qty as u64;
-            if c.ok { l.total = p.price * c.days as u64 * l.qty as u64; } else if l.error.is_none() { l.error = c.error; }
+            if c.ok { l.total = unit * c.days as u64 * l.qty as u64; } else if l.error.is_none() { l.error = c.error; }
+            if was > 0 && c.ok { l.saved = (was - unit) * c.days as u64 * l.qty as u64; }
         } else {
-            l.total = p.price * l.qty as u64;
+            l.total = unit * l.qty as u64;
+            if was > 0 { l.saved = (was - unit) * l.qty as u64; }
         }
         lines.push(l);
     }
@@ -130,10 +157,11 @@ pub fn price(cat: &Catalog, cart: &[Item]) -> Quote {
         let items: Vec<Item> = cart.iter().filter(|i| mine.iter().any(|l| l.id == i.id)).cloned().collect();
         let subtotal: u64 = mine.iter().filter(|l| l.error.is_none()).map(|l| l.total).sum();
         let deposits: u64 = mine.iter().filter(|l| l.error.is_none()).map(|l| l.deposit).sum();
+        let saved: u64 = mine.iter().filter(|l| l.error.is_none()).map(|l| l.saved).sum();
         houses.push(HouseTotal {
             house: h.id.clone(), name: h.name.clone(), currency: h.currency.clone(),
             items: mine.iter().filter(|l| l.error.is_none()).map(|l| l.qty).sum(),
-            subtotal, deposits, total: subtotal + deposits, code: code(&items),
+            subtotal, deposits, total: subtotal + deposits, saved, code: code(&items),
         });
     }
     let ok = lines.iter().all(|l| l.error.is_none());
@@ -217,12 +245,14 @@ pub fn compose(q: &Quote, house: &str, verify_base: &str, name: &str, note: &str
             t += &format!("• {} × {}{} — RENT {} → {} ({} days) = {}\n", l.qty, l.title, opt, l.from, l.to, l.days, money(l.total, cur));
             if l.deposit > 0 { t += &format!("   refundable deposit {}\n", money(l.deposit, cur)); }
         } else {
-            t += &format!("• {} × {}{} = {}\n", l.qty, l.title, opt, money(l.total, cur));
+            let save = if l.saved > 0 { format!(" (save {})", money(l.saved, cur)) } else { String::new() };
+            t += &format!("• {} × {}{} = {}{}\n", l.qty, l.title, opt, money(l.total, cur), save);
         }
         items.push(Item { id: l.id.clone(), qty: l.qty, opt: l.opt.clone(), from: l.from.clone(), to: l.to.clone() });
     }
     t += &format!("\nSubtotal: {}\n", money(h.subtotal, cur));
     if h.deposits > 0 { t += &format!("Deposits: {}\n", money(h.deposits, cur)); }
+    if h.saved > 0 { t += &format!("You save: {}\n", money(h.saved, cur)); }
     t += &format!("Total: {}\n\nOrder {}\n", money(h.total, cur), h.code);
     if !name.trim().is_empty() { t += &format!("Name: {}\n", name.trim()); }
     if !note.trim().is_empty() { t += &format!("Note: {}\n", note.trim()); }
@@ -243,6 +273,9 @@ impl Ledger {
     #[wasm_bindgen(constructor)]
     pub fn new(catalog: JsValue) -> Result<Ledger, JsValue> { Ok(Ledger { cat: rs(catalog)? }) }
 
+    /// The shopper's date, so offers end on time even if the site hasn't been rebuilt.
+    pub fn set_today(&mut self, today: &str) { self.cat.today = today.into(); }
+
     pub fn quote(&self, cart: JsValue) -> Result<JsValue, JsValue> { js(&price(&self.cat, &rs::<Vec<Item>>(cart)?)) }
 
     pub fn message(&self, cart: JsValue, house: &str, verify_base: &str, name: &str, note: &str) -> Result<String, JsValue> {
@@ -256,6 +289,7 @@ impl Ledger {
 }
 
 #[wasm_bindgen] pub fn format_money(minor: f64, currency: &str) -> String { money(minor as u64, currency) }
+#[wasm_bindgen] pub fn sale_price(price_minor: f64, percent: u32, step_minor: f64) -> f64 { percent_off(price_minor as u64, percent, step_minor as u64) as f64 }
 #[wasm_bindgen] pub fn encode_cart(cart: JsValue) -> Result<String, JsValue> { Ok(encode(&rs::<Vec<Item>>(cart)?)) }
 #[wasm_bindgen] pub fn decode_cart(s: &str) -> Result<JsValue, JsValue> { js(&decode(s)) }
 #[wasm_bindgen] pub fn check_code(c: &str) -> bool { valid_code(c) }
@@ -270,11 +304,12 @@ mod tests {
         Catalog {
             houses: vec![House { id: "sandals".into(), name: "Obi Sandals".into(), currency: "NGN".into() },
                          House { id: "scents".into(), name: "Scent House".into(), currency: "NGN".into() }],
+            today: String::new(),
             products: vec![
-                Product { id: "kano".into(), title: "Kano Slide".into(), house: "sandals".into(), mode: "buy".into(), price: 2_500_000, stock: "in".into(), rent: None },
-                Product { id: "oud".into(), title: "Oud Noir".into(), house: "scents".into(), mode: "buy".into(), price: 4_000_000, stock: "out".into(), rent: None },
+                Product { id: "kano".into(), title: "Kano Slide".into(), house: "sandals".into(), mode: "buy".into(), price: 2_500_000, stock: "in".into(), rent: None, sale: None },
+                Product { id: "oud".into(), title: "Oud Noir".into(), house: "scents".into(), mode: "buy".into(), price: 4_000_000, stock: "out".into(), rent: None, sale: None },
                 Product { id: "bridal".into(), title: "Bridal Set".into(), house: "sandals".into(), mode: "rent".into(), price: 500_000, stock: "in".into(),
-                          rent: Some(Rent { deposit: 2_000_000, min_days: 2, units: None, booked: vec![rg("2026-12-24", "2026-12-26", None)] }) },
+                          rent: Some(Rent { deposit: 2_000_000, min_days: 2, units: None, booked: vec![rg("2026-12-24", "2026-12-26", None)] }), sale: None },
             ],
         }
     }
@@ -313,7 +348,7 @@ mod tests {
     #[test] fn cart_lines_share_stock() {
         let mut c = cat();
         c.products.push(Product { id: "chair".into(), title: "Chair".into(), house: "sandals".into(), mode: "rent".into(), price: 30_000, stock: "in".into(),
-            rent: Some(Rent { deposit: 0, min_days: 1, units: Some(100), booked: vec![] }) });
+            rent: Some(Rent { deposit: 0, min_days: 1, units: Some(100), booked: vec![] }), sale: None });
         let two = [Item { id: "chair".into(), qty: 60, from: "2026-12-01".into(), to: "2026-12-01".into(), opt: "".into() },
                    Item { id: "chair".into(), qty: 50, from: "2026-12-01".into(), to: "2026-12-01".into(), opt: "White".into() }];
         assert!(!price(&c, &two).ok); // 110 > 100 across two lines
@@ -329,6 +364,32 @@ mod tests {
         assert!(!q.ok); // oud is sold out
         assert_eq!(q.lines[2].error.as_deref(), Some("Sold out"));
         assert_eq!(q.houses.iter().find(|h| h.house == "scents").unwrap().total, 0);
+    }
+
+    #[test] fn offers_apply_until_they_end() {
+        let mut c = cat();
+        c.products[0].sale = Some(Sale { price: 2_150_000, ends: "2026-11-30".into() }); // kano 25,000 → 21,500
+        let cart = [it("kano", 2, "", "")];
+        c.today = "2026-11-30".into();
+        let q = price(&c, &cart);
+        assert_eq!((q.lines[0].unit, q.lines[0].was, q.lines[0].total, q.lines[0].saved), (2_150_000, 2_500_000, 4_300_000, 700_000));
+        assert_eq!(q.houses[0].saved, 700_000);
+        let m = compose(&q, "sandals", "x/", "", "");
+        assert!(m.contains("= ₦43,000 (save ₦7,000)"), "{m}");
+        assert!(m.contains("You save: ₦7,000"));
+        c.today = "2026-12-01".into(); // the day after: regular price, no "was"
+        let q = price(&c, &cart);
+        assert_eq!((q.lines[0].unit, q.lines[0].was, q.lines[0].saved), (2_500_000, 0, 0));
+        // a "sale" that isn't cheaper is ignored
+        c.products[0].sale = Some(Sale { price: 3_000_000, ends: String::new() });
+        assert_eq!(price(&c, &cart).lines[0].unit, 2_500_000);
+    }
+
+    #[test] fn percent_off_rounds_down_to_step() {
+        assert_eq!(percent_off(2_200_000, 15, 50_000), 1_850_000); // ₦22,000 −15% = 18,700 → ₦18,500
+        assert_eq!(percent_off(2_900_000, 15, 50_000), 2_450_000); // ₦29,000 → ₦24,500
+        assert_eq!(percent_off(1_000, 10, 0), 900);
+        assert_eq!(percent_off(1_000, 150, 0), 0);
     }
 
     #[test] fn money_format() {

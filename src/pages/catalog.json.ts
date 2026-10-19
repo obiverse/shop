@@ -1,6 +1,6 @@
 // The browser's price list. The cart stores ids only; every quote is re-computed from this file.
 import { getImage } from "astro:assets";
-import { houses, products, minor, iso, href } from "../lib/shop";
+import { houses, products, minor, iso, href, offer } from "../lib/shop";
 
 export async function GET() {
   const hs = await houses();
@@ -15,6 +15,7 @@ export async function GET() {
         mode: p.data.mode,
         price: minor(p.data.price),
         stock: p.data.stock,
+        sale: ((o) => o && { price: minor(o.now), ends: o.ends ?? "" })(offer(p, hs.find((h) => h.id === p.data.house.id)!)),
         rent: p.data.rent && {
           deposit: minor(p.data.rent.deposit),
           min_days: p.data.rent.min_days,

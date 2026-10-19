@@ -2,7 +2,7 @@
 title: "Club de Nuit Intense Man"
 house: scents
 mode: buy
-price: 45000 # PLACEHOLDER — confirm
+price: 28000
 summary: "Power. Mystery. Attraction. A bold, long-lasting scent for men. 50 ml."
 images: [./1.jpg, ./photo-1.jpg]
 options:

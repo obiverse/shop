@@ -11,6 +11,7 @@
   --ok: #2f7d4f;
   --warn: #b0561d;
   --wa: #1fa855;
+  --sale: #c4362b;
   --shadow: 0 1px 2px #1a161310, 0 8px 24px #1a161312;
   --r: 18px;
   --r-s: 12px;
@@ -31,6 +32,7 @@
     --accent-ink: #14110f;
     --ok: #5fbf85;
     --warn: #e58a4e;
+    --sale: #ff6b5b;
     --shadow: 0 1px 2px #0006, 0 8px 24px #0005;
     color-scheme: dark;
   }
@@ -129,6 +131,7 @@ p { margin: 0; }
 .house .lineup { width: calc(100% + 24px); max-width: none; margin: 18px -12px -30px; height: auto; filter: drop-shadow(0 18px 18px #0006); transition: transform .5s cubic-bezier(.2,.7,.2,1); }
 @media (hover: hover) { .house:hover .lineup { transform: translateY(-6px) scale(1.02); } }
 .lookbook { width: 100%; border-radius: var(--r); box-shadow: var(--shadow); }
+.house .promo { align-self: flex-start; margin-top: 12px; padding: 6px 12px; border-radius: 99px; background: var(--sale); color: #fff; font-size: .8rem; font-weight: 800; letter-spacing: .02em; box-shadow: 0 4px 14px #0004; }
 .house .go { position: absolute; top: 18px; right: 18px; width: 40px; height: 40px; border-radius: 50%; background: #ffffff26; display: grid; place-items: center; }
 
 /* ── grid + cards */
@@ -151,6 +154,14 @@ p { margin: 0; }
   letter-spacing: 0.04em; background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
 }
 .badge.rent { background: var(--accent); color: var(--accent-ink); }
+.badge.off { background: var(--sale); color: #fff; }
+.now.hot { color: var(--sale); }
+.off { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 99px; background: var(--sale); color: #fff; font-size: .8rem; font-weight: 800; vertical-align: 3px; }
+.offer { margin-top: 10px; padding: 10px 14px; border-radius: var(--r-s); background: color-mix(in srgb, var(--sale) 10%, var(--surface)); border: 1px dashed color-mix(in srgb, var(--sale) 45%, transparent); font-size: .9rem; }
+.offer b { color: var(--sale); }
+.sum .save { color: var(--sale); font-weight: 700; }
+.line .r s { display: block; font-weight: 500; }
+[data-offer-only][hidden] { display: none !important; }
 .heart {
   position: absolute; right: 8px; top: 8px; width: 38px; height: 38px; border-radius: 50%; border: 0; cursor: pointer;
   background: color-mix(in srgb, var(--surface) 85%, transparent); display: grid; place-items: center; backdrop-filter: blur(6px);

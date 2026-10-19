@@ -2,7 +2,7 @@
 title: "Urban Cross"
 house: sandals
 mode: buy
-price: 30000 # PLACEHOLDER — confirm
+price: 25500 # regular price; the house launch offer takes 15% off
 summary: "Modern and versatile. Perforated cross straps with polished horsebit hardware."
 images: [./1.jpg, ./2.jpg, ./photo-1.jpg]
 options:

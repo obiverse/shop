@@ -116,6 +116,15 @@ export class Ledger {
             wasm.__wbindgen_add_to_stack_pointer(16);
         }
     }
+    /**
+     * The shopper's date, so offers end on time even if the site hasn't been rebuilt.
+     * @param {string} today
+     */
+    set_today(today) {
+        const ptr0 = passStringToWasm0(today, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.ledger_set_today(this.__wbg_ptr, ptr0, len0);
+    }
 }
 if (Symbol.dispose) Ledger.prototype[Symbol.dispose] = Ledger.prototype.free;
 
@@ -203,6 +212,17 @@ export function format_money(minor, currency) {
         wasm.__wbindgen_add_to_stack_pointer(16);
         wasm.__wbindgen_export4(deferred2_0, deferred2_1, 1);
     }
+}
+
+/**
+ * @param {number} price_minor
+ * @param {number} percent
+ * @param {number} step_minor
+ * @returns {number}
+ */
+export function sale_price(price_minor, percent, step_minor) {
+    const ret = wasm.sale_price(price_minor, percent, step_minor);
+    return ret;
 }
 function __wbg_get_imports() {
     const import0 = {

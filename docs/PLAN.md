@@ -43,6 +43,7 @@ is static, and the trade closes person to person, the way Sinbad's did.
 | D9 | **Verify link in every order.** | The team re-prices in one tap and never trusts edited message text. |
 | D10 | **The shop is an app.** Installable PWA with a bottom tab bar (Shop · Rent · Saved · Cart), offline catalogue and cart, install prompt + iOS hint, home-screen shortcuts, cross-page View Transitions, haptics, Web Share, automatic dark mode. | Feels like an app without an app store, and survives bad networks. |
 | D11 | **Studio pipeline in the repo** (`pnpm studio <photo> <slug>`). Apple Vision lifts the product on-device, then it's placed on the house backdrop with a cast shadow. The untouched photo is kept beside it. | Phone photos on tiles become catalogue shots in one command. Showing the real photo too keeps it honest. |
+| D13 | **Offers are real and time-boxed.** House `promo` (percent + end date) or product `sale`; the ledger applies them using the shopper's date, so they end on time without a rebuild. NGN offers round down to ₦500. | Discount badges, strike-throughs and countdowns drive sales; an honest end date keeps them legal (FCCPA) and credible. |
 | D12 | **3D is opt-in per product** (`model: ./x.glb` → `<model-viewer>`, lazy-loaded, AR on phones). | Pages without a model pay nothing. See *3D path* below. |
 
 ## Upgrade paths (when, not if)
@@ -75,7 +76,7 @@ Photos sell these products; 3D has to be real or not at all. For a flagship pair
 
 ## What only you can do
 
-1. **Prices.** Every product carries a `# PLACEHOLDER — confirm` price. Send the real list.
+1. **Prices.** Slippers ₦18,500–₦24,500 on the launch offer (regular ₦22,000–₦29,000, 15% off until 30 Nov, reverts automatically). Perfumes ₦8,000–₦30,000. Chairs still a placeholder (₦300/chair/day).
 2. **Names.** "Obi Sandals" and "Scent House" are working names (Obiverse Assets is from its flier). Does the perfume house have its own WhatsApp number?
 3. **Sizes.** Slippers list 40–46. Correct this if the range differs.
 4. **Chairs.** Price per chair per day (placeholder ₦300), any deposit, whether blue/purple are counted separately, and a real photo of the stacks (`pnpm studio`). Drop the chair flier into `assets/products/` for the lookbook.

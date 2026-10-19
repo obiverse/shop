@@ -12,6 +12,10 @@ Read [docs/PLAN.md](docs/PLAN.md) for the why.
 | Add or edit a product from my phone | Open `/shop/admin/`, sign in with your GitHub token, edit, Save. Then someone runs `pnpm ship`. |
 | Add a product on a laptop | Make `src/content/products/<slug>/index.md` (copy a neighbour) and put the photos beside it. |
 | Turn a phone photo into a catalogue shot | `pnpm studio ~/Downloads/IMG_1234.HEIC <slug>` (sand backdrop; add `dusk` for perfumes). Needs macOS. |
+| Change a price | Edit `price:` (the regular price) in the product, or in the admin. |
+| Run a sale on a whole house | In `src/content/houses/<house>.json` (or admin → Houses): `"promo": { "label": "Launch offer", "percent": 15, "ends": "2026-11-30" }`. Every product shows −15%, the struck-through regular price and a countdown. **On the day after `ends`, prices return to regular by themselves.** Delete `promo` to end early. |
+| Put one product on sale | In the product: `sale: { percent: 20, ends: 2026-12-24 }` or `sale: { price: 17500 }`. Overrides the house offer. |
+| Add a badge | `badge: Bestseller` (only if it's true). |
 | Mark something sold out | Set `stock: out` (or `low`, `made_to_order`). |
 | Hide a product | Set `draft: true`. |
 | Block rental dates | Add `{ from: 2026-12-24, to: 2026-12-27 }` under `rent.booked`. |
