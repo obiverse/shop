@@ -6,17 +6,16 @@ import { shop, href } from "../lib/shop";
 type Props = {
   title?: string;
   description?: string;
-  image?: string; // absolute or site-relative
+  image?: string;
   tab?: "shop" | "rent" | "saved" | "cart" | "";
-  back?: boolean;
-  head?: boolean; // render extra <head> slot
+  bare?: boolean; // product pages: no header or tab bar; the page brings its own floating controls and action bar
 };
-const { title, description = shop.tagline, image = href("og.png"), tab = "", back = false } = Astro.props;
-const full = title ? `${title} · ${shop.name}` : `${shop.name} · Sandals, scents & rentals`;
+const { title, description = shop.tagline, image = href("og.png"), tab = "", bare = false } = Astro.props;
+const full = title ? `${title} · ${shop.name}` : `${shop.name} · Slippers, perfumes & chair rentals`;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const og = new URL(image, Astro.site).href;
 const tabs = [
-  { id: "shop", label: "Shop", to: "", icon: "shop" },
+  { id: "shop", label: "Home", to: "", icon: "home" },
   { id: "rent", label: "Rent", to: "rent/", icon: "rent" },
   { id: "saved", label: "Saved", to: "saved/", icon: "heart" },
   { id: "cart", label: "Cart", to: "cart/", icon: "cart" },
@@ -36,56 +35,77 @@ const tabs = [
     <meta property="og:image" content={og} />
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#f5efe6" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#12100e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f5f4f1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c0b0e" media="(prefers-color-scheme: dark)" />
     <link rel="manifest" href={href("manifest.webmanifest")} />
     <link rel="icon" href={href("icons/64.png")} />
     <link rel="apple-touch-icon" href={href("icons/apple-180.png")} />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content={shop.short} />
+    <meta name="application-name" content={shop.short} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" />
     <slot name="head" />
   </head>
-  <body>
-    <header class="top">
-      <div class="wrap">
-        <a class="brand" href={href()}><img src={href("icons/192.png")} alt="" width="32" height="32" />{shop.short}</a>
-        {back && <a class="iconbtn back" href={href()} onclick="if(history.length>1&&document.referrer.includes(location.host)){history.back();return false}" aria-label="Back"><Icon name="back" /></a>}
-        <nav aria-label="Main">
-          {tabs.map((t) => (
-            <a href={href(t.to)} aria-current={tab === t.id ? "page" : undefined}>
-              {t.label}{t.id === "cart" && <span class="count" data-cart-count hidden>0</span>}
-            </a>
-          ))}
-        </nav>
-      </div>
-    </header>
+  <body class:list={{ bare }} data-base={href()}>
+    {!bare && (
+      <header class="top">
+        <div class="wrap">
+          <div class="bar">
+            <a class="brand" href={href()} aria-label={shop.name}><img src={href("icons/192.png")} alt="" width="34" height="34" /><span>Obiverse <b>Shop</b></span></a>
+            <nav aria-label="Main">
+              {tabs.map((t) => <a href={href(t.to)} aria-current={tab === t.id ? "page" : undefined}>{t.label}</a>)}
+            </nav>
+            <button class="search-pill" data-search type="button"><Icon name="search" />Search slippers, perfumes, chairs…</button>
+            <div class="end">
+              <button class="icon-btn search-ico" data-search type="button" aria-label="Search"><Icon name="search" /></button>
+              <a class="icon-btn" href={href("saved/")} aria-label="Saved"><Icon name="heart" /></a>
+              <a class="icon-btn" href={href("cart/")} aria-label="Cart" data-cart-target><Icon name="cart" /><span class="count" data-cart-count hidden>0</span></a>
+            </div>
+          </div>
+          <div class="search-row"><button class="search-pill" data-search type="button"><Icon name="search" />Search slippers, perfumes, chairs…</button></div>
+        </div>
+      </header>
+    )}
 
     <main class="wrap"><slot /></main>
 
-    <footer class="site">
-      <div class="wrap">
-        <span>{shop.name} · every order is confirmed with you on WhatsApp before you pay.</span>
-        <a href="https://obiverse.github.io">Made by Obiverse</a>
+    {!bare && (<>
+      <footer class="site">
+        <div class="wrap">
+          <span>{shop.name} · nothing is charged here; every order is confirmed with you on WhatsApp.</span>
+          <a href="https://obiverse.github.io">Made by Obiverse</a>
+        </div>
+      </footer>
+      <nav class="tabs" aria-label="App">
+        {tabs.map((t) => (
+          <a href={href(t.to)} aria-current={tab === t.id ? "page" : undefined} data-cart-target={t.id === "cart" ? "" : undefined}>
+            <Icon name={t.icon} />{t.label}{t.id === "cart" && <span class="count" data-cart-count hidden>0</span>}
+          </a>
+        ))}
+      </nav>
+    </>)}
+
+    <dialog class="search" id="search" aria-label="Search">
+      <div class="search-head">
+        <button class="icon-btn" data-close aria-label="Close search"><Icon name="back" /></button>
+        <input type="search" placeholder="Search slippers, perfumes, chairs…" autocomplete="off" enterkeyhint="search" aria-label="Search" />
       </div>
-    </footer>
+      <div class="results" id="results" aria-live="polite"></div>
+    </dialog>
 
-    <nav class="tabs" aria-label="App">
-      {tabs.map((t) => (
-        <a href={href(t.to)} aria-current={tab === t.id ? "page" : undefined}>
-          <Icon name={t.icon} />{t.label}{t.id === "cart" && <span class="count" data-cart-count hidden>0</span>}
-        </a>
-      ))}
-    </nav>
+    <dialog class="sheet" id="quick" aria-label="Choose options">
+      <div class="grab"></div>
+      <form method="dialog" id="quick-form"></form>
+    </dialog>
 
-    <div class="sheet" id="install" hidden role="dialog" aria-label="Install the app">
+    <div class="install" id="install" hidden role="dialog" aria-label="Install the app">
       <img src={href("icons/192.png")} alt="" />
-      <p><b>Get the {shop.short} app.</b> <span class="and">Fast, works offline, no app store.</span><span class="ios">Tap Share, then “Add to Home Screen”.</span></p>
-      <button class="btn" data-install>Install</button>
-      <button class="iconbtn" data-dismiss aria-label="Not now"><Icon name="close" /></button>
+      <p><b>Get the {shop.short} app.</b> <span class="and">Faster, works offline, no app store.</span><span class="ios">Tap Share, then “Add to Home Screen”.</span></p>
+      <button class="btn brand" data-install>Install</button>
+      <button class="icon-btn" data-dismiss aria-label="Not now"><Icon name="close" /></button>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

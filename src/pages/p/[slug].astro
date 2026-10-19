@@ -4,7 +4,7 @@ import { render } from "astro:content";
 import Shell from "../../layouts/Shell.astro";
 import Icon from "../../components/Icon.astro";
 import Card from "../../components/Card.astro";
-import { products, houseOf, href, money, stockLabel, iso, offer, endsLabel, type Product } from "../../lib/shop";
+import { products, houseOf, houses, href, money, stockLabel, iso, offer, endsLabel, type Product } from "../../lib/shop";
 
 export async function getStaticPaths() {
   return (await products()).map((p) => ({ params: { slug: p.id }, props: { p } }));
@@ -18,15 +18,24 @@ const rent = d.mode === "rent";
 const o = offer(p, h);
 const priceText = money(o?.now ?? d.price, cur) + (rent ? " / day" : "") + (o ? ` (was ${money(o.was, cur)})` : "");
 const og = await getImage({ src: d.images[0], width: 1200, height: 630, fit: "cover", format: "jpeg" });
-const more = (await products((x) => x.data.house.id === h.id && x.id !== p.id)).slice(0, 4);
+const hs = await houses();
+const more = [
+  ...(await products((x) => x.data.house.id === h.id && x.id !== p.id)),
+  ...(await products((x) => x.data.house.id !== h.id && x.data.featured)),
+].slice(0, 8);
 const today = new Date().toISOString().slice(0, 10);
 const booked = (d.rent?.booked ?? []).filter((r) => iso(r.to) >= today);
 const fmt = (x: Date) => x.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 const units = d.rent?.units;
 const unit = d.rent?.unit ?? "item";
 const max = rent ? (units ?? 1) : 20;
+const perks = rent
+  ? [["📅", "We hold your dates", "Confirmed with you on WhatsApp before you pay"], ["🚚", "Delivered & collected", "Ugep and surroundings, agreed with you"], ["🧼", "Clean & well maintained", "Wiped down after every event"]]
+  : h.id === "sandals"
+    ? [["✋", "Handmade in Nigeria", "Real leather, strong stitched soles"], ["🚚", "Nationwide delivery", "Cost agreed with you on WhatsApp"], ["📏", "Not sure of your size?", "Ask us on WhatsApp before you order"]]
+    : [["✅", "Authentic & sealed", "Delivered in the original box"], ["🚚", "Nationwide delivery", "Cost agreed with you on WhatsApp"], ["💬", "Ask before you buy", "We'll describe the scent honestly"]];
 ---
-<Shell title={d.title} description={`${priceText} · ${d.summary}`} image={og.src} back>
+<Shell title={d.title} description={`${priceText} · ${d.summary}`} image={og.src} bare>
   <Fragment slot="head">
     <meta property="og:type" content="product" />
     <meta property="product:price:amount" content={String(o?.now ?? d.price)} />
@@ -39,36 +48,41 @@ const max = rent ? (units ?? 1) : 20;
     {d.model && <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.4.0/dist/model-viewer.min.js" />}
   </Fragment>
 
-  <article class="pdp" data-id={p.id} data-mode={d.mode} data-stock={d.stock} data-unit={unit} data-price={d.price * 100} data-deposit={(d.rent?.deposit ?? 0) * 100} data-cur={cur}>
-    <div class="gallery">
+  <div class="float-top">
+    <a class="icon-btn glass" href={href()} data-back aria-label="Back"><Icon name="back" /></a>
+    <span class="sp ttl">{d.title}</span>
+    <button class="icon-btn glass" data-share={new URL(href(`p/${p.id}/`), Astro.site).href} data-title={`${d.title} — ${priceText}`} aria-label="Share"><Icon name="share" /></button>
+    <button class="icon-btn glass heart-btn" data-save={p.id} aria-pressed="false" aria-label="Save"><Icon name="heart" /></button>
+    <a class="icon-btn glass" href={href("cart/")} aria-label="Cart" data-cart-target><Icon name="cart" /><span class="count" data-cart-count hidden>0</span></a>
+  </div>
+
+  <article class="pdp" data-id={p.id} data-mode={d.mode} data-unit={unit} data-cur={cur} data-house={h.id} data-wa={h.data.whatsapp.replace(/\D/g, "")}>
+    <div class="gallery" style={d.tint && `--tint:${d.tint}`}>
       <div class="slides" id="slides">
         {d.images.map((img, i) => (
-          <Picture src={img} alt={`${d.title}, photo ${i + 1}`} widths={[480, 720, 1080, 1440]} sizes="(min-width: 900px) 600px, 100vw" formats={["avif", "webp"]} loading={i === 0 ? "eager" : "lazy"} fetchpriority={i === 0 ? "high" : "auto"} />
+          <Picture src={img} alt={`${d.title}, photo ${i + 1}`} widths={[480, 720, 1080, 1440]} sizes="(min-width: 900px) 640px, 100vw" formats={["avif", "webp"]} loading={i === 0 ? "eager" : "lazy"} fetchpriority={i === 0 ? "high" : "auto"} data-fly-src={i === 0 ? "" : undefined} />
         ))}
-        {d.model && (
-          <div><model-viewer src={href(d.model)} alt={`${d.title} in 3D`} camera-controls auto-rotate ar touch-action="pan-y" shadow-intensity="1" /></div>
-        )}
+        {d.model && <div><model-viewer src={href(d.model)} alt={`${d.title} in 3D`} camera-controls auto-rotate ar touch-action="pan-y" shadow-intensity="1" /></div>}
       </div>
-      <div class="dots" id="dots">{[...d.images, ...(d.model ? [1] : [])].map((_, i) => <i class:list={{ on: i === 0 }} />)}</div>
+      {d.images.length > 1 && <div class="dots" id="dots">{[...d.images, ...(d.model ? [1] : [])].map((_, i) => <i class:list={{ on: i === 0 }} />)}</div>}
     </div>
 
     <div class="info">
-      <a class="k" href={href(`h/${h.id}/`)}>{h.data.name}</a>
+      <a class="chip-house" href={href(`h/${h.id}/`)} style={`--h:${h.data.accent}`}><i></i>{h.data.name}</a>
       <h1>{d.title}</h1>
       <div class="price" data-ends={o?.ends} data-regular={o && money(d.price, cur)}>
-        <span class:list={["now", { hot: o }]}>{money(o?.now ?? d.price, cur)}</span>{rent && <small> per {unit} per day</small>}
+        <span class:list={["now", { hot: o }]}>{money(o?.now ?? d.price, cur)}</span>{rent && <small>per {unit} per day</small>}
         {o && <s data-offer-only>{money(o.was, cur)}</s>}
         {o && <span class="off" data-offer-only>−{o.pct}%</span>}
       </div>
       {o && (
         <div class="offer" data-offer-only data-ends={o.ends}>
-          <b>{o.label}</b>{o.ends && <> · ends {endsLabel(o.ends)} <span data-days-left={o.ends}></span></>} · you save {money(o.was - o.now, cur)}
+          <span>🔥 <b>{o.label}</b> · you save {money(o.was - o.now, cur)}{o.ends && <> · ends {endsLabel(o.ends)}</>}</span>
+          {o.ends && <span class="timer" data-countdown={o.ends}>…</span>}
         </div>
       )}
       {rent ? (
-        <div class="stock" data-s="in">
-          {units ? `${units} ${unit}s available · ` : ""}{d.rent?.deposit ? `refundable deposit ${money(d.rent.deposit, cur)} each · ` : ""}minimum {d.rent?.min_days ?? 1} day{(d.rent?.min_days ?? 1) > 1 ? "s" : ""}
-        </div>
+        <div class="stock" data-s="in">{units ? `${units} ${unit}s available` : "Available"}{d.rent?.deposit ? ` · deposit ${money(d.rent.deposit, cur)} each` : ""} · min {d.rent?.min_days ?? 1} day{(d.rent?.min_days ?? 1) > 1 ? "s" : ""}</div>
       ) : (
         <div class="stock" data-s={d.stock}>{stockLabel[d.stock]}{d.lead_days && ` · ready in about ${d.lead_days} days`}</div>
       )}
@@ -88,7 +102,7 @@ const max = rent ? (units ?? 1) : 20;
 
         {rent && (
           <fieldset>
-            <legend>Rental dates</legend>
+            <legend>Your dates</legend>
             <div class="dates">
               <label class="field">From<input type="date" name="from" min={today} required /></label>
               <label class="field">To<input type="date" name="to" min={today} required /></label>
@@ -99,55 +113,56 @@ const max = rent ? (units ?? 1) : 20;
           </fieldset>
         )}
 
-        <div class="buy">
+        <div class="actionbar">
           <div class="qty" aria-label="Quantity">
             <button type="button" data-q={units ? "-10" : "-1"} aria-label="Fewer">−</button>
             <input id="qty" name="qty" type="number" inputmode="numeric" min="1" max={max} value={units ? Math.min(50, units) : 1} aria-label={`How many${rent ? ` ${unit}s` : ""}`} />
             <button type="button" data-q={units ? "10" : "1"} aria-label="More">+</button>
           </div>
-          <button class="btn grow" id="addbtn" disabled={d.stock === "out"}>{d.stock === "out" ? "Sold out" : rent ? "Add rental" : "Add to cart"}</button>
+          <button class="btn brand grow" id="addbtn" disabled={d.stock === "out"}>{d.stock === "out" ? "Sold out" : rent ? "Add booking" : "Add to cart"}</button>
+          <button class="btn wa sq" type="button" id="buynow" disabled={d.stock === "out"} aria-label={`Order this now on WhatsApp`} title="Order this now on WhatsApp"><Icon name="wa" /></button>
         </div>
       </form>
 
-      <div class="actions">
-        <button class="btn ghost grow" data-save={p.id} aria-pressed="false"><Icon name="heart" />Save</button>
-        <button class="btn ghost grow" data-share={new URL(href(`p/${p.id}/`), Astro.site).href} data-title={`${d.title} — ${priceText}`}><Icon name="share" />Share</button>
-      </div>
-
-      <div class="perks">
-        <div><b>01</b><span>Your order goes to {h.data.name} on WhatsApp. Nothing is charged here.</span></div>
-        <div><b>02</b><span>We confirm stock, delivery and the final price with you before you pay.</span></div>
-        {rent && (d.rent?.deposit ?? 0) > 0 && <div><b>03</b><span>Deposit is refunded when the item comes back as it left.</span></div>}
-        {rent && <div><b>{(d.rent?.deposit ?? 0) > 0 ? "04" : "03"}</b><span>We confirm your dates and hold them once agreed. Delivery and collection are arranged with you.</span></div>}
-      </div>
-
-      <div class="prose sec"><Content /></div>
+      <div class="perks">{perks.map(([e, t, s]) => <div><span>{e}</span><p><b>{t}</b>{s}</p></div>)}</div>
+      <div class="prose"><Content /></div>
     </div>
   </article>
 
   {more.length > 0 && (
     <section class="sec">
-      <div class="sechead"><h2>More from {h.data.name}</h2><a href={href(`h/${h.id}/`)}>See all</a></div>
-      <div class="grid">{more.map((x) => <Card p={x} house={h} />)}</div>
+      <div class="sechead"><h2>You may also like</h2></div>
+      <div class="rail">{more.map((x) => <Card p={x} house={hs.find((hh) => hh.id === x.data.house.id)!} />)}</div>
     </section>
   )}
 </Shell>
 
 <script>
-  import { cart } from "../../scripts/store";
+  import { cart, profile, type Item } from "../../scripts/store";
   import { load, money } from "../../scripts/ledger";
-  import { toast, buzz } from "../../scripts/app";
+  import { toast, buzz, fly } from "../../scripts/app";
 
   const art = document.querySelector<HTMLElement>(".pdp")!;
-  const id = art.dataset.id!;
+  const { id, unit, cur, house, wa } = art.dataset as Record<string, string>;
   const rent = art.dataset.mode === "rent";
   const form = document.getElementById("add") as HTMLFormElement;
   const qtyEl = document.getElementById("qty") as HTMLInputElement;
-  const estimate = document.getElementById("estimate");
-  const { unit, cur } = art.dataset as Record<string, string>;
-  const qtyNow = () => Math.max(1, Math.min(Number(qtyEl.max), Math.round(Number(qtyEl.value) || 1)));
   const btn = document.getElementById("addbtn") as HTMLButtonElement;
   const avail = document.getElementById("avail");
+  const estimate = document.getElementById("estimate");
+  const qtyNow = () => Math.max(1, Math.min(Number(qtyEl.max), Math.round(Number(qtyEl.value) || 1)));
+
+  // Back goes back when they came from the shop; otherwise home.
+  document.querySelector<HTMLAnchorElement>("[data-back]")!.addEventListener("click", (e) => {
+    if (history.length > 1 && document.referrer.includes(location.host)) { e.preventDefault(); history.back(); }
+  });
+
+  // The floating controls get a solid bar (and the title) once the photo scrolls away.
+  const top = document.querySelector(".float-top")!;
+  const gallery = document.querySelector<HTMLElement>(".gallery")!;
+  const solid = () => top.classList.toggle("solid", scrollY > gallery.offsetHeight - 90);
+  addEventListener("scroll", solid, { passive: true });
+  solid();
 
   // Gallery dots follow the swipe.
   const slides = document.getElementById("slides")!;
@@ -159,11 +174,12 @@ const max = rent ? (units ?? 1) : 20;
 
   form.querySelectorAll<HTMLButtonElement>("[data-q]").forEach((b) => b.addEventListener("click", () => {
     qtyEl.value = String(Math.max(1, Math.min(Number(qtyEl.max), qtyNow() + Number(b.dataset.q))));
+    buzz();
     if (rent) check();
   }));
   qtyEl.addEventListener("change", () => { qtyEl.value = String(qtyNow()); });
 
-  // Rentals: the ledger checks minimum days and clashes as dates change.
+  // Rentals: the ledger checks minimum days and stock on every day as things change.
   async function check() {
     if (!rent || !avail) return true;
     const f = new FormData(form);
@@ -174,7 +190,7 @@ const max = rent ? (units ?? 1) : 20;
     const r = ledger.dates(id, from, to, qty) as { ok: boolean; days: number; free: number; error?: string };
     avail.dataset.ok = String(r.ok);
     const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
-    avail.textContent = r.ok ? `Available · ${plural(r.days, "day")}${r.free > 1 ? ` · ${r.free} ${unit}s free` : ""}` : r.error ?? "";
+    avail.textContent = r.ok ? `✓ Available · ${plural(r.days, "day")}${r.free > 1 ? ` · ${r.free} ${unit}s free` : ""}` : r.error ?? "";
     if (estimate) {
       const q = ledger.quote([{ id, qty, opt: "", from, to }]) as { lines: { total: number; deposit: number }[] };
       const l = q.lines[0];
@@ -182,26 +198,43 @@ const max = rent ? (units ?? 1) : 20;
     }
     return r.ok;
   }
-  if (rent) {
-    form.addEventListener("change", check);
-    load(); // warm the ledger while they choose
+  if (rent) { form.addEventListener("change", check); load(); }
+
+  // The item as chosen, or null after pointing at what's missing.
+  async function chosen(): Promise<Item | null> {
+    const missing = [...form.querySelectorAll("fieldset")].find((fs) => fs.querySelector("input[type=radio]") && !fs.querySelector("input:checked"));
+    if (missing) {
+      missing.scrollIntoView({ behavior: "smooth", block: "center" });
+      const opts = missing.querySelector(".opts")!;
+      opts.classList.remove("shake"); void (opts as HTMLElement).offsetWidth; opts.classList.add("shake");
+      toast(`Choose a ${missing.querySelector("legend")!.textContent!.toLowerCase()}`);
+      return null;
+    }
+    if (!form.reportValidity()) return null;
+    if (!(await check())) { toast("Choose dates that are free"); return null; }
+    const f = new FormData(form);
+    const opt = [...form.querySelectorAll("fieldset legend")].map((l) => l.textContent!).filter((n) => f.has(n)).map((n) => `${n} ${f.get(n)}`).join(", ");
+    return { id, qty: qtyNow(), opt, from: String(f.get("from") || ""), to: String(f.get("to") || "") };
   }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!form.reportValidity()) return;
-    if (!(await check())) { toast("Choose dates that are free"); return; }
-    const f = new FormData(form);
-    const opt = [...form.querySelectorAll("fieldset legend")]
-      .map((l) => l.textContent!)
-      .filter((n) => n !== "qty")
-      .filter((n) => f.has(n))
-      .map((n) => `${n} ${f.get(n)}`)
-      .join(", ");
-    cart.add({ id, qty: qtyNow(), opt, from: String(f.get("from") || ""), to: String(f.get("to") || "") });
-    buzz();
+    const item = await chosen();
+    if (!item) return;
+    cart.add(item);
+    fly(document.querySelector<HTMLImageElement>("#slides img"));
     btn.textContent = "Added ✓";
-    toast("Added to cart");
-    setTimeout(() => (btn.textContent = rent ? "Add rental" : "Add to cart"), 1600);
+    toast("Added to cart", true);
+    setTimeout(() => (btn.textContent = rent ? "Add booking" : "Add to cart"), 1600);
+  });
+
+  // Buy now: this one item straight to the house on WhatsApp.
+  document.getElementById("buynow")!.addEventListener("click", async () => {
+    const item = await chosen();
+    if (!item) return;
+    const { ledger } = await load();
+    const me = profile.get();
+    const text = ledger.message([item], house, new URL(`${import.meta.env.BASE_URL}order/`, location.origin).href, me.name, me.note);
+    open(`https://wa.me/${wa}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
   });
 </script>

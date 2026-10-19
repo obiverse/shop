@@ -3,11 +3,8 @@ import Shell from "../layouts/Shell.astro";
 ---
 <Shell title="Verify order" description="Re-price an order against today's catalogue.">
   <Fragment slot="head"><meta name="robots" content="noindex" /></Fragment>
-  <section class="hero">
-    <div class="k">For the team</div>
-    <h1 style="margin-top:10px">Verify order</h1>
-    <p>This order was re-priced just now against today's catalogue. If the WhatsApp message disagrees with this page, this page is right.</p>
-  </section>
+  <div class="page-title"><div><span class="k">For the team</span><h1 style="margin-top:6px">Verify order</h1></div></div>
+  <p class="muted" style="font-weight:600;max-width:60ch">This order was re-priced just now against today's catalogue. If the WhatsApp message disagrees with this page, this page is right.</p>
   <div id="state"></div>
   <div id="out"></div>
   <div class="actions" id="act" hidden><button class="btn ghost grow" id="copy">Copy order summary</button></div>

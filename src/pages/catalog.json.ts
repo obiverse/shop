@@ -23,8 +23,10 @@ export async function GET() {
           booked: p.data.rent.booked.map((r) => ({ from: iso(r.from), to: iso(r.to), qty: r.qty })),
         },
         options: p.data.options,
+        tags: p.data.tags,
+        tint: p.data.tint,
         url: href(`p/${p.id}/`),
-        thumb: (await getImage({ src: p.data.images[0], width: 240, height: 300, format: "webp" })).src,
+        thumb: (await getImage({ src: p.data.images[0], width: 320, height: 400, format: "webp" })).src,
       })),
     ),
   };

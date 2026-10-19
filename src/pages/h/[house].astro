@@ -1,24 +1,34 @@
 ---
+import { Image } from "astro:assets";
 import Shell from "../../layouts/Shell.astro";
 import Card from "../../components/Card.astro";
-import { Image } from "astro:assets";
-import { houses, products } from "../../lib/shop";
+import { houses, products, offer, endsLabel, iso } from "../../lib/shop";
 
 export async function getStaticPaths() {
   return (await houses()).map((h) => ({ params: { house: h.id }, props: { h } }));
 }
 const { h } = Astro.props;
 const ps = await products((p) => p.data.house.id === h.id);
+const promo = h.data.promo && (!h.data.promo.ends || iso(h.data.promo.ends) >= iso(new Date())) ? h.data.promo : undefined;
+const ends = promo?.ends && iso(promo.ends);
 ---
-<Shell title={h.data.name} description={h.data.tagline} image={h.data.lookbook?.src} back>
-  <section class="house" style={`--h:${h.data.accent};margin-top:16px;min-height:220px`}>
-    <div class="k">House</div>
-    <h1 style="color:#fff">{h.data.name}</h1>
-    <p>{h.data.story}</p>
+<Shell title={h.data.name} description={h.data.tagline} image={h.data.lookbook?.src}>
+  <section class:list={["house-hero", { ink: h.data.dark_text }]} style={`--hgrad:${h.data.gradient ?? h.data.accent}`}>
+    <span class="k" style="color:inherit;opacity:.75">{h.data.emoji} House</span>
+    <h1 style="margin-top:8px">{h.data.name}</h1>
+    <p>{h.data.tagline}</p>
+    {promo && (
+      <div class="offer" data-offer-only data-ends={ends} style="background:#0000002e;box-shadow:none;max-width:520px">
+        <span>🔥 <b>{promo.label}</b> · {promo.percent}% off everything{ends && <> · ends {endsLabel(ends)}</>}</span>
+        {ends && <span class="timer" data-countdown={ends}>…</span>}
+      </div>
+    )}
+    {h.data.lineup && <Image src={h.data.lineup} alt="" widths={[600, 1000, 1400]} sizes="(min-width: 760px) 720px, 100vw" loading="eager" />}
   </section>
   <section class="sec">
-    <div class="sechead"><h2>{ps.length} pieces</h2></div>
+    <div class="sechead"><h2>{ps.length} {ps.length === 1 ? "item" : "items"}</h2></div>
     <div class="grid">{ps.map((p, i) => <Card p={p} house={h} eager={i < 4} />)}</div>
   </section>
-  {h.data.lookbook && <Image class="lookbook sec" src={h.data.lookbook} alt={`${h.data.name} lookbook`} widths={[600, 1000, 1400]} sizes="(min-width: 1180px) 1148px, 100vw" />}
+  <section class="sec"><p class="muted" style="font-weight:600;max-width:60ch">{h.data.story}</p></section>
+  {h.data.lookbook && <section class="sec"><Image class="lookbook" src={h.data.lookbook} alt={`${h.data.name} lookbook`} widths={[600, 1000, 1400]} sizes="(min-width: 1240px) 1208px, 100vw" /></section>}
 </Shell>

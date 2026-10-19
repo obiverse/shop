@@ -5,6 +5,8 @@ mode: buy
 price: 10000
 summary: "Freshness that stays with you. A fresh floral scent for everyday wear. 50 ml."
 images: [./1.jpg, ./photo-1.jpg]
+cutout: ./cutout.webp
+tint: "#F59BC8"
 options:
   - name: Size
     values: [50 ml]

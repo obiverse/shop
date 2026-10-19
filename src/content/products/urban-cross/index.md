@@ -5,6 +5,8 @@ mode: buy
 price: 25500 # regular price; the house launch offer takes 15% off
 summary: "Modern and versatile. Perforated cross straps with polished horsebit hardware."
 images: [./1.jpg, ./2.jpg, ./photo-1.jpg]
+cutout: ./cutout.webp
+tint: "#8FB0F2"
 options:
   - name: Size
     values: [40, 41, 42, 43, 44, 45, 46]

@@ -5,6 +5,8 @@ mode: buy
 price: 28000
 summary: "Power. Mystery. Attraction. A bold, long-lasting scent for men. 50 ml."
 images: [./1.jpg, ./photo-1.jpg]
+cutout: ./cutout.webp
+tint: "#A9AEBB"
 options:
   - name: Size
     values: [50 ml]

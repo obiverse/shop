@@ -6,21 +6,17 @@ import { houses, products, href } from "../lib/shop";
 const hs = await houses();
 const byId = Object.fromEntries(hs.map((h) => [h.id, h]));
 const ps = await products((p) => p.data.mode === "rent");
+const r = hs.find((h) => h.id === "rentals");
 ---
 <Shell title="Rent" description="Rent chairs for your party, wedding or meeting. Choose how many and your dates, send on WhatsApp." tab="rent">
-  <section class="hero">
-    <div class="k">Rentals</div>
-    <h1 style="margin-top:10px">Chairs for your event.</h1>
+  <section class:list={["house-hero", { ink: r?.data.dark_text }]} style={`--hgrad:${r?.data.gradient ?? "var(--brand-grad)"};padding-bottom:24px`}>
+    <span class="k" style="color:inherit;opacity:.75">🎉 Rentals</span>
+    <h1 style="margin-top:8px">Chairs for your event</h1>
     <p>Choose how many and your dates. We check they're free, hold them for you, and arrange delivery and collection on WhatsApp.</p>
   </section>
   {ps.length > 0 ? (
     <div class="grid sec">{ps.map((p, i) => <Card p={p} house={byId[p.data.house.id]} eager={i < 4} />)}</div>
   ) : (
-    <div class="empty">
-      <h2>Rentals open soon</h2>
-      <p>Tell us what you'd like to rent for your event and the dates, and we'll arrange it on WhatsApp.</p>
-      <a class="btn wa" href={`https://wa.me/${hs[0].data.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent("Hello! I'd like to rent something for an event.")}`}>Ask on WhatsApp</a>
-      <p style="margin-top:16px"><a href={href()} style="text-decoration:underline">Browse the shop</a></p>
-    </div>
+    <div class="empty"><div class="art">🪑</div><h2>Rentals open soon</h2><p>Tell us what you'd like to rent and when.</p><a class="btn" href={href()}>Browse the shop</a></div>
   )}
 </Shell>

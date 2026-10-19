@@ -4,7 +4,7 @@ import type { Item } from "./store";
 
 export type Catalog = {
   houses: { id: string; name: string; currency: string; whatsapp: string; accent: string }[];
-  products: { id: string; title: string; house: string; mode: string; price: number; stock: string; sale?: { price: number; ends: string }; url: string; thumb: string; options: { name: string; values: string[] }[]; rent?: { deposit: number; min_days: number; units?: number; booked: { from: string; to: string; qty?: number }[] } }[];
+  products: { id: string; title: string; house: string; mode: string; price: number; stock: string; sale?: { price: number; ends: string }; url: string; thumb: string; tags: string[]; tint?: string; options: { name: string; values: string[] }[]; rent?: { deposit: number; min_days: number; units?: number; booked: { from: string; to: string; qty?: number }[] } }[];
 };
 export type Line = { id: string; title: string; house: string; mode: string; qty: number; opt: string; from: string; to: string; days: number; unit: number; was: number; deposit: number; total: number; saved: number; error?: string };
 export type HouseTotal = { house: string; name: string; currency: string; items: number; subtotal: number; deposits: number; total: number; saved: number; code: string };

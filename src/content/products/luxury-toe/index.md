@@ -4,7 +4,9 @@ house: sandals
 mode: buy
 price: 29000 # regular price; the house launch offer takes 15% off
 summary: "A distinctive look. Glossy croc band and toe ring with gold hardware and white contrast stitching."
-images: [./1.jpg, ./photo-1.jpg, ./photo-2.jpg]
+images: [./1.jpg, ./photo-1.jpg, ./detail.jpg]
+cutout: ./cutout.webp
+tint: "#F5BE2E"
 options:
   - name: Size
     values: [40, 41, 42, 43, 44, 45, 46]

@@ -4,7 +4,16 @@
   "story": "Quality chairs for your events and gatherings: parties and weddings, Jumaat and programmes, office and community meetings, outdoor ceremonies. Strong and durable, clean and well maintained, delivered on time, at affordable rates. Call 0807 637 8063 or 0806 300 2980.",
   "whatsapp": "+2348076378063",
   "currency": "NGN",
-  "accent": "#2A2614",
+  "accent": "#FFB800",
   "lineup": "./rentals-lineup.webp",
-  "order": 3
+  "order": 3,
+  "gradient": "linear-gradient(135deg, #FFE14D 0%, #FFC21A 50%, #FF9F00 100%)",
+  "dark_text": true,
+  "emoji": "🪑",
+  "banner": {
+    "kicker": "🎉 Obiverse Assets",
+    "title": "Chairs for your event",
+    "text": "100 chairs · Ugep & surroundings · from {from}/day",
+    "cta": "Book chairs"
+  }
 }

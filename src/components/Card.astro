@@ -5,24 +5,25 @@ import { href, money, stockLabel, offer, type Product, type House } from "../lib
 
 type Props = { p: Product; house: House; eager?: boolean };
 const { p, house, eager = false } = Astro.props;
-const { title, price, mode, stock, images } = p.data;
+const { title, price, mode, stock, images, tint } = p.data;
 const cur = house.data.currency;
 const o = offer(p, house);
 // One badge, most persuasive true thing first: an offer, then the team's badge, then scarcity.
 const badge = o ? `−${o.pct}%` : p.data.badge ?? (mode === "rent" ? "For rent" : stock === "in" ? "" : stockLabel[stock]);
 const kind = o ? "off" : mode === "rent" ? "rent" : "";
 ---
-<a class="card" href={href(`p/${p.id}/`)} data-house={house.id} data-mode={mode} data-tags={p.data.tags.join(" ")}>
+<a class="card reveal" href={href(`p/${p.id}/`)} data-house={house.id} data-mode={mode} data-sale={o ? 1 : 0} data-tags={p.data.tags.join(" ")} style={tint && `--tint:${tint}`}>
   <div class="ph">
-    <Picture src={images[0]} alt={title} widths={[240, 360, 480, 720]} sizes="(min-width: 1040px) 280px, (min-width: 700px) 33vw, 50vw" formats={["avif", "webp"]} loading={eager ? "eager" : "lazy"} />
+    <Picture src={images[0]} alt={title} widths={[240, 360, 480, 640]} sizes="(min-width: 1040px) 240px, (min-width: 700px) 32vw, 48vw" formats={["avif", "webp"]} loading={eager ? "eager" : "lazy"} />
     {badge && <span class:list={["badge", kind]} data-offer-only={o ? "" : undefined} data-ends={o?.ends}>{badge}</span>}
     <button class="heart" data-save={p.id} aria-pressed="false" aria-label={`Save ${title}`}><Icon name="heart" /></button>
+    {stock !== "out" && <button class="quick" data-quick={p.id} aria-label={`Quick add ${title}`}><Icon name="plus" /></button>}
   </div>
   <div class="m">
-    <div class="k">{house.data.name}</div>
-    <div class="t">{title}</div>
+    <span class="house">{house.data.name}</span>
+    <span class="t">{title}</span>
     <div class="pr" data-ends={o?.ends} data-regular={o && money(price, cur)}>
-      <span class:list={["now", { hot: o }]}>{money(o?.now ?? price, cur)}</span>{mode === "rent" && <span class="muted"> / day</span>}
+      <span class:list={["now", { hot: o }]}>{money(o?.now ?? price, cur)}</span>{mode === "rent" && <span class="per">/day</span>}
       {o && <s data-offer-only>{money(o.was, cur)}</s>}
     </div>
   </div>

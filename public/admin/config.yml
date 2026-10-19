@@ -55,7 +55,9 @@ collections:
           - { name: label, label: "Label (e.g. Weekend deal)", widget: string, required: false }
       - { name: badge, label: "Badge (optional, only if true: Bestseller, New…)", widget: string, required: false }
       - { name: summary, label: "One-line summary (max 160)", widget: string, pattern: ['^.{1,160}$', "160 characters at most"] }
-      - { name: images, label: Photos, widget: image, multiple: true, hint: "First photo is the cover and the WhatsApp preview. Portrait 4:5 looks best." }
+      - { name: images, label: Photos, widget: image, multiple: true, hint: "First photo is the cover and the WhatsApp preview. Portrait 4:5 looks best. `pnpm studio` makes these from a phone photo." }
+      - { name: cutout, label: "Cut-out (transparent, from pnpm studio)", widget: image, required: false }
+      - { name: tint, label: "Backdrop colour of the photo", widget: color, required: false }
       - name: options
         label: Options (sizes, colours, volumes)
         widget: list
@@ -108,6 +110,19 @@ collections:
       - { name: whatsapp, label: "WhatsApp number (international, e.g. +2349064265750)", widget: string }
       - { name: currency, label: Currency, widget: select, options: [NGN, USD, GBP, EUR, GHS, KES], default: NGN }
       - { name: accent, label: Accent colour, widget: color }
+      - { name: gradient, label: "Banner gradient (CSS)", widget: string, required: false }
+      - { name: dark_text, label: "Dark text on the banner (for light colours)", widget: boolean, default: false }
+      - { name: emoji, label: Emoji, widget: string, default: "🛍️" }
+      - name: banner
+        label: Home banner
+        widget: object
+        required: false
+        hint: "{from} is replaced with the lowest current price in this house."
+        fields:
+          - { name: kicker, label: "Small label (e.g. 🔥 Launch offer)", widget: string }
+          - { name: title, label: Headline, widget: string }
+          - { name: text, label: Line under the headline, widget: string }
+          - { name: cta, label: Button text, widget: string }
       - name: promo
         label: "House-wide offer (e.g. 15% off everything)"
         widget: object

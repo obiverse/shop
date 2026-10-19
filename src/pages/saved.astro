@@ -8,12 +8,13 @@ const byId = Object.fromEntries(hs.map((h) => [h.id, h]));
 const ps = await products();
 ---
 <Shell title="Saved" tab="saved">
-  <section class="hero"><h1>Saved</h1></section>
-  <div class="grid sec" id="grid">{ps.map((p) => <Card p={p} house={byId[p.data.house.id]} />)}</div>
+  <div class="page-title"><h1>Saved</h1><span class="muted" id="n"></span></div>
+  <div class="grid sec" id="grid" style="margin-top:16px">{ps.map((p) => <Card p={p} house={byId[p.data.house.id]} />)}</div>
   <div class="empty" id="empty" hidden>
+    <div class="art">💛</div>
     <h2>Nothing saved yet</h2>
-    <p>Tap the heart on anything you like and it waits for you here, even offline.</p>
-    <a class="btn" href={href()}>Browse the shop</a>
+    <p>Tap the heart on anything you love and it waits for you here, even offline.</p>
+    <a class="btn brand" href={href()}>Discover the shop</a>
   </div>
 </Shell>
 
@@ -28,6 +29,8 @@ const ps = await products();
       if (on) n++;
     });
     document.getElementById("empty")!.hidden = n > 0;
+    document.getElementById("grid")!.hidden = n === 0;
+    document.getElementById("n")!.textContent = n ? `${n} item${n > 1 ? "s" : ""}` : "";
   }
   addEventListener("shop:change", show);
   show();

@@ -1,59 +1,148 @@
 ---
+import { getImage } from "astro:assets";
 import Shell from "../layouts/Shell.astro";
 import Card from "../components/Card.astro";
 import Icon from "../components/Icon.astro";
-import { Image } from "astro:assets";
-import { houses, products, href, shop, iso, endsLabel } from "../lib/shop";
+import { houses, products, href, money, offer, iso } from "../lib/shop";
 
 const hs = await houses();
 const ps = await products();
 const byId = Object.fromEntries(hs.map((h) => [h.id, h]));
+const houseOf = (p: (typeof ps)[number]) => byId[p.data.house.id];
+const nowPrice = (p: (typeof ps)[number]) => offer(p, houseOf(p))?.now ?? p.data.price;
+const cut = async (p?: (typeof ps)[number]) => (p?.data.cutout ? (await getImage({ src: p.data.cutout, width: 420, format: "webp" })).src : undefined);
+
+const deals = ps.filter((p) => offer(p, houseOf(p)));
+const dealEnds = deals.map((p) => offer(p, houseOf(p))!.ends).filter(Boolean).sort()[0];
+const perfumes = ps.filter((p) => p.data.house.id === "scents").sort((a, b) => nowPrice(a) - nowPrice(b));
+const chairs = ps.find((p) => p.data.mode === "rent");
+
+const banners = await Promise.all(
+  hs.filter((h) => h.data.banner).map(async (h) => {
+    const mine = ps.filter((p) => p.data.house.id === h.id);
+    const from = money(Math.min(...mine.map(nowPrice)), h.data.currency);
+    const art = await Promise.all(mine.filter((p) => p.data.cutout).sort((a, b) => Number(b.data.featured) - Number(a.data.featured)).slice(0, 3).map(cut));
+    const ends = h.data.promo?.ends && iso(h.data.promo.ends);
+    return { h, b: h.data.banner!, text: h.data.banner!.text.replace("{from}", from), art, ends };
+  }),
+);
+
+const pick = (id: string) => ps.find((p) => p.id === id);
+const stories = [
+  { label: "Deals", to: "?f=sale#all", img: await cut(pick("luxury-toe")), ring: "linear-gradient(135deg,#ff2d55,#ff8a00)" },
+  ...(await Promise.all(hs.map(async (h) => ({ label: h.data.name.replace(/^Obiverse /, ""), to: `h/${h.id}/`, img: await cut(ps.find((p) => p.data.house.id === h.id && p.data.featured && p.data.cutout)), ring: h.data.gradient })))),
+  { label: "For him", to: "?f=tag:men#all", img: await cut(pick("urban-cross")), ring: "linear-gradient(135deg,#3a7bfd,#7b5cff)" },
+  { label: "For her", to: "?f=tag:women#all", img: await cut(pick("kay-ali-lovefest-burning-cherry")), ring: "linear-gradient(135deg,#ff5fa2,#b4237d)" },
+];
+const chairCut = await cut(chairs);
+const tags = [...new Set(ps.flatMap((p) => p.data.tags))].filter((t) => ["men", "women", "unisex", "events", "travel", "arabian"].includes(t));
 ---
 <Shell tab="shop">
-  <section class="hero">
-    <div class="k">Slippers · Perfumes · Chair rentals</div>
-    <h1 style="margin-top:10px">Goods worth the voyage.</h1>
-    <p>{shop.tagline}</p>
+  <section class="greet">
+    <h1 id="hello">Welcome 👋</h1>
+    <p>What are you shopping for today?</p>
   </section>
 
-  <section class="houses" aria-label="Houses">
-    {hs.map((h) => (
-      <a class="house" href={href(`h/${h.id}/`)} style={`--h:${h.data.accent}`}>
-        <span class="go"><Icon name="arrow" /></span>
-        <div class="k">House</div>
-        <h2>{h.data.name}</h2>
-        <p>{h.data.tagline}</p>
-        {h.data.promo && (!h.data.promo.ends || iso(h.data.promo.ends) >= iso(new Date())) && (
-          <span class="promo" data-offer-only data-ends={h.data.promo.ends && iso(h.data.promo.ends)}>
-            {h.data.promo.label} · {h.data.promo.percent}% off{h.data.promo.ends && ` · ends ${endsLabel(iso(h.data.promo.ends))}`}
-          </span>
-        )}
-        {h.data.lineup && <Image class="lineup" src={h.data.lineup} alt="" widths={[480, 800, 1200]} sizes="(min-width: 700px) 560px, 100vw" loading="eager" />}
+  <nav class="stories" aria-label="Categories">
+    {stories.map((s) => (
+      <a class="story" href={href(s.to)} style={`--ring:${s.ring}`}>
+        <span class="ring"><span class="disc">{s.img ? <img src={s.img} alt="" loading="eager" /> : <span class="emo">🔥</span>}</span></span>
+        {s.label}
       </a>
     ))}
+  </nav>
+
+  <section class="banners" aria-label="Offers">
+    <div class="banner-track" id="banners">
+      {banners.map(({ h, b, text, art, ends }) => (
+        <a class:list={["banner", { ink: h.data.dark_text }]} href={href(`h/${h.id}/`)} style={`--bg-grad:${h.data.gradient ?? h.data.accent}`}>
+          <div>
+            <span class="kick">{b.kicker}</span>
+            <h2>{b.title}</h2>
+            <p>{text}</p>
+            {ends && <span class="timer" data-countdown={ends} data-offer-only data-ends={ends}>…</span>}
+            <span class="cta">{b.cta} <Icon name="arrow" /></span>
+          </div>
+          <div class="art" aria-hidden="true">{art.filter(Boolean).map((src) => <img src={src} alt="" />)}</div>
+        </a>
+      ))}
+    </div>
+    <div class="banner-dots" id="banner-dots">{banners.map((_, i) => <i class:list={{ on: i === 0 }} />)}</div>
   </section>
+
+  {deals.length > 0 && (
+    <section class="sec" data-offer-only data-ends={dealEnds}>
+      <div class="sechead">
+        <h2>Launch deals</h2>
+        {dealEnds && <span class="timer" data-countdown={dealEnds}>…</span>}
+        <a class="more" href={href("?f=sale#all")}>See all <Icon name="chev" /></a>
+      </div>
+      <div class="rail">{deals.map((p, i) => <Card p={p} house={houseOf(p)} eager={i < 3} />)}</div>
+    </section>
+  )}
 
   <section class="sec">
-    <div class="sechead"><h2>Everything</h2><span class="muted" id="n">{ps.length} pieces</span></div>
-    <div class="chips" role="toolbar" aria-label="Filter">
-      <button class="chip" data-f="all" aria-pressed="true">All</button>
-      {hs.map((h) => <button class="chip" data-f={`house:${h.id}`} aria-pressed="false">{h.data.name}</button>)}
-      {ps.some((p) => p.data.mode === "rent") && <button class="chip" data-f="mode:rent" aria-pressed="false">For rent</button>}
-      {[...new Set(ps.flatMap((p) => p.data.tags))].slice(0, 8).map((t) => <button class="chip" data-f={`tag:${t}`} aria-pressed="false">{t[0].toUpperCase() + t.slice(1)}</button>)}
-    </div>
-    <div class="grid" style="margin-top:16px" id="grid">
-      {ps.map((p, i) => <Card p={p} house={byId[p.data.house.id]} eager={i < 4} />)}
-    </div>
+    <div class="sechead"><h2>Perfumes from {money(nowPrice(perfumes[0]), "NGN")}</h2><a class="more" href={href("h/scents/")}>See all <Icon name="chev" /></a></div>
+    <div class="rail">{perfumes.map((p) => <Card p={p} house={houseOf(p)} />)}</div>
   </section>
 
-  <section class="how" aria-label="How it works">
-    <div><h3>Build your cart</h3><p class="muted">Pick sizes, choose rental dates. Your cart stays on your phone.</p></div>
-    <div><h3>Send on WhatsApp</h3><p class="muted">One tap sends your order, with an order code, to each house.</p></div>
-    <div><h3>We close the trade</h3><p class="muted">We confirm stock, delivery and payment with you, person to person.</p></div>
+  {chairs && (
+    <section class="sec">
+      <a class="tile reveal" href={href(`p/${chairs.id}/`)}>
+        <div>
+          <span class="k" style="color:#0009">Obiverse Assets</span>
+          <h2 style="margin-top:6px">Planning an event?</h2>
+          <p>{chairs.data.rent?.units} chairs ready in Ugep &amp; surroundings. Pick your dates, we deliver and collect.</p>
+          <span class="cta">Book chairs · {money(nowPrice(chairs), "NGN")}/day</span>
+        </div>
+        {chairCut && <img src={chairCut} alt="" loading="lazy" />}
+      </a>
+    </section>
+  )}
+
+  <section class="sec" id="all">
+    <div class="sechead"><h2>Shop everything</h2><span class="muted" id="n" style="margin-left:auto;font-weight:700">{ps.length} items</span></div>
+    <div class="chips" role="toolbar" aria-label="Filter">
+      <button class="chip" data-f="all" aria-pressed="true">All</button>
+      {deals.length > 0 && <button class="chip" data-f="sale" aria-pressed="false">🔥 On sale</button>}
+      {hs.map((h) => <button class="chip" data-f={`house:${h.id}`} aria-pressed="false">{h.data.emoji} {h.data.name}</button>)}
+      {tags.map((t) => <button class="chip" data-f={`tag:${t}`} aria-pressed="false">{t[0].toUpperCase() + t.slice(1)}</button>)}
+    </div>
+    <div class="grid" id="grid">{ps.map((p) => <Card p={p} house={houseOf(p)} />)}</div>
+  </section>
+
+  <section class="sec trust" aria-label="Why shop with us">
+    <div><span>💬</span><p><b>Order on WhatsApp</b>Confirmed with you before you pay</p></div>
+    <div><span>🚚</span><p><b>Nationwide delivery</b>Agreed with you, no surprises</p></div>
+    <div><span>✋</span><p><b>Handmade slippers</b>Real leather, strong soles</p></div>
+    <div><span>✅</span><p><b>Authentic perfumes</b>Sealed in the box</p></div>
   </section>
 </Shell>
 
 <script>
+  // Greeting by time of day, with their name if they've ordered before.
+  try {
+    const h = new Date().getHours();
+    const name = (JSON.parse(localStorage.getItem("obv.profile") || "{}").name || "").split(" ")[0];
+    document.getElementById("hello")!.textContent = `${h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"}${name ? `, ${name}` : ""} 👋`;
+  } catch {}
+
+  // Banner carousel: swipe, dots, gentle autoplay that stops once touched.
+  const track = document.getElementById("banners")!;
+  const dots = [...document.querySelectorAll("#banner-dots i")];
+  const step = () => (track.firstElementChild as HTMLElement).offsetWidth + 12;
+  const at = () => Math.round(track.scrollLeft / step());
+  track.addEventListener("scroll", () => dots.forEach((d, i) => d.classList.toggle("on", i === at())), { passive: true });
+  let hold = false;
+  ["pointerdown", "touchstart", "mouseenter"].forEach((e) => track.addEventListener(e, () => (hold = true), { passive: true }));
+  setInterval(() => {
+    if (hold || document.hidden || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const visible = Math.max(1, Math.round(track.clientWidth / step()));
+    const next = at() + 1 > dots.length - visible ? 0 : at() + 1;
+    track.scrollTo({ left: next * step(), behavior: "smooth" });
+  }, 4500);
+
+  // Filters (also from ?f= so stories and "See all" can deep-link).
   const chips = document.querySelectorAll<HTMLButtonElement>(".chip[data-f]");
   const cards = document.querySelectorAll<HTMLElement>("#grid .card");
   const n = document.getElementById("n")!;
@@ -61,15 +150,17 @@ const byId = Object.fromEntries(hs.map((h) => [h.id, h]));
     const [k, v] = f.split(":");
     let shown = 0;
     cards.forEach((c) => {
-      const ok = f === "all" || (k === "house" && c.dataset.house === v) || (k === "mode" && c.dataset.mode === v) || (k === "tag" && c.dataset.tags!.split(" ").includes(v));
+      const ok = f === "all" || (f === "sale" && c.dataset.sale === "1") || (k === "house" && c.dataset.house === v) || (k === "tag" && c.dataset.tags!.split(" ").includes(v));
       c.hidden = !ok;
       if (ok) shown++;
     });
     chips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.f === f)));
-    n.textContent = `${shown} piece${shown === 1 ? "" : "s"}`;
+    n.textContent = `${shown} item${shown === 1 ? "" : "s"}`;
   }
   chips.forEach((c) => c.addEventListener("click", () => {
     const go = () => apply(c.dataset.f!);
     (document as any).startViewTransition ? (document as any).startViewTransition(go) : go();
   }));
+  const f = new URLSearchParams(location.search).get("f");
+  if (f) apply(f);
 </script>

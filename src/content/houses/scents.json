@@ -4,8 +4,16 @@
   "story": "Eau de parfums from Lattafa, Armaf, Kay Ali, Smart Collection and more, plus everyday body care. Sealed in the box, delivered nationwide.",
   "whatsapp": "+2349064265750",
   "currency": "NGN",
-  "accent": "#3B2342",
+  "accent": "#B4237D",
   "lineup": "./scents-lineup.webp",
   "lookbook": "./scents-lookbook.jpg",
-  "order": 2
+  "order": 2,
+  "gradient": "linear-gradient(135deg, #FF5FA2 0%, #B4237D 55%, #5E1F8F 100%)",
+  "emoji": "🌸",
+  "banner": {
+    "kicker": "✨ Scent House",
+    "title": "Scents that stay all day",
+    "text": "From {from} · Lattafa, Armaf, Kay Ali & more",
+    "cta": "Shop perfumes"
+  }
 }

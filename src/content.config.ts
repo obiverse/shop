@@ -12,6 +12,11 @@ const houses = defineCollection({
     whatsapp: z.string().regex(/^\+?[\d\s-]{8,}$/, "International format, e.g. +2348012345678"),
     currency: z.enum(["NGN", "USD", "GBP", "EUR", "GHS", "KES"]).default("NGN"),
     accent: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    gradient: z.string().optional(), // CSS gradient for banners and the house header
+    dark_text: z.boolean().default(false), // true on light gradients (e.g. yellow)
+    emoji: z.string().default("🛍️"),
+    // The home-screen banner for this house. {from} becomes the lowest current price.
+    banner: z.object({ kicker: z.string(), title: z.string(), text: z.string(), cta: z.string() }).optional(),
     lineup: image().optional(), // transparent row of products for the home card
     lookbook: image().optional(), // the house flier
     // A house-wide, time-boxed offer, e.g. 15% off every slipper until 30 Nov. Products can override with their own `sale`.
@@ -36,6 +41,8 @@ const products = defineCollection({
       badge: z.string().max(18).optional(), // "Bestseller", "New" — only if true
       summary: z.string().max(160),
       images: z.array(image()).min(1),
+      cutout: image().optional(), // transparent product, for banners, stories and the quick-add sheet
+      tint: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(), // the photo's backdrop colour
       model: z.string().optional(),
       options: z.array(z.object({ name: z.string(), values: z.array(z.coerce.string()).min(1) })).default([]),
       stock: z.enum(["in", "low", "made_to_order", "out"]).default("in"),

@@ -4,7 +4,7 @@
   "story": "Quality leather, durable materials, comfortable all day. Strong soles built to last, a premium finish and quality hardware, made by hand. Nationwide delivery.",
   "whatsapp": "+2349064265750",
   "currency": "NGN",
-  "accent": "#5A3420",
+  "accent": "#FF6A1A",
   "lineup": "./sandals-lineup.webp",
   "lookbook": "./sandals-lookbook.jpg",
   "order": 1,
@@ -12,5 +12,13 @@
     "label": "Launch offer",
     "percent": 15,
     "ends": "2026-11-30"
+  },
+  "gradient": "linear-gradient(135deg, #FF9A3D 0%, #FF5A1F 55%, #D93A12 100%)",
+  "emoji": "🩴",
+  "banner": {
+    "kicker": "🔥 Launch offer",
+    "title": "15% off handmade slippers",
+    "text": "From {from} · real leather, made by hand",
+    "cta": "Shop slippers"
   }
 }

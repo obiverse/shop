@@ -1,5 +1,5 @@
 // Offline shell. Pages: network first, fall back to cache. Assets and photos: cache first, refresh behind.
-const V = "obv-2";
+const V = "obv-3";
 const BASE = new URL(self.registration.scope).pathname;
 const CORE = [BASE, `${BASE}cart/`, `${BASE}saved/`, `${BASE}rent/`, `${BASE}catalog.json`, `${BASE}offline/`];
 

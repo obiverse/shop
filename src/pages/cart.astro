@@ -3,21 +3,22 @@ import Shell from "../layouts/Shell.astro";
 import { href } from "../lib/shop";
 ---
 <Shell title="Cart" tab="cart">
-  <section class="hero"><h1>Your cart</h1></section>
+  <div class="page-title"><h1>Your cart</h1></div>
   <div id="who" hidden>
     <div class="who">
       <label class="field">Your name<input name="name" autocomplete="name" placeholder="So we know who's writing" /></label>
       <label class="field">Delivery or notes<textarea name="note" placeholder="Area / city, when you need it, gift wrap…"></textarea></label>
     </div>
-    <p class="muted" style="margin-top:12px;font-size:.9rem">Each house gets its own message with an order code. Nothing is charged here. We confirm everything with you on WhatsApp.</p>
+    <p class="muted" style="font-size:.84rem;font-weight:600;grid-column:1/-1">💬 Each house gets its own WhatsApp message with an order code. Nothing is charged here; we confirm everything with you first.</p>
   </div>
 
   <div id="out" aria-live="polite"><p class="muted">Pricing your cart…</p></div>
 
   <div class="empty" id="empty" hidden>
+    <div class="art">🛍️</div>
     <h2>Your cart is empty</h2>
-    <p>Add sandals, scents or a rental and send the whole thing to us on WhatsApp.</p>
-    <a class="btn" href={href()}>Start shopping</a>
+    <p>Add slippers, perfumes or chairs, then send the whole thing to us on WhatsApp.</p>
+    <a class="btn brand" href={href()}>Start shopping</a>
   </div>
 
   <div class="notice ok" id="sent" hidden>

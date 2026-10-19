@@ -5,6 +5,8 @@ mode: rent
 price: 300 # PLACEHOLDER — confirm (per chair, per day)
 summary: "Quality chairs for your events and gatherings. Strong, clean, delivered on time. Rent as many as you need, by the day."
 images: [./1.jpg]
+cutout: ./cutout.webp
+tint: "#FFBE1A"
 options:
   - name: Colour
     values: [Blue, Purple, Any]

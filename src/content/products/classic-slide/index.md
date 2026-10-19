@@ -5,6 +5,8 @@ mode: buy
 price: 22000 # regular price; the house launch offer takes 15% off
 summary: "Simple and elegant. A wide leather band with a slim gold bar, on a cushioned stitched sole."
 images: [./1.jpg, ./photo-1.jpg]
+cutout: ./cutout.webp
+tint: "#FFAE6B"
 options:
   - name: Size
     values: [40, 41, 42, 43, 44, 45, 46]
