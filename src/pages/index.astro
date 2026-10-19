@@ -1,0 +1,70 @@
+---
+import Shell from "../layouts/Shell.astro";
+import Card from "../components/Card.astro";
+import Icon from "../components/Icon.astro";
+import { Image } from "astro:assets";
+import { houses, products, href, shop } from "../lib/shop";
+
+const hs = await houses();
+const ps = await products();
+const byId = Object.fromEntries(hs.map((h) => [h.id, h]));
+---
+<Shell tab="shop">
+  <section class="hero">
+    <div class="k">Slippers · Perfumes · Chair rentals</div>
+    <h1 style="margin-top:10px">Goods worth the voyage.</h1>
+    <p>{shop.tagline}</p>
+  </section>
+
+  <section class="houses" aria-label="Houses">
+    {hs.map((h) => (
+      <a class="house" href={href(`h/${h.id}/`)} style={`--h:${h.data.accent}`}>
+        <span class="go"><Icon name="arrow" /></span>
+        <div class="k">House</div>
+        <h2>{h.data.name}</h2>
+        <p>{h.data.tagline}</p>
+        {h.data.lineup && <Image class="lineup" src={h.data.lineup} alt="" widths={[480, 800, 1200]} sizes="(min-width: 700px) 560px, 100vw" loading="eager" />}
+      </a>
+    ))}
+  </section>
+
+  <section class="sec">
+    <div class="sechead"><h2>Everything</h2><span class="muted" id="n">{ps.length} pieces</span></div>
+    <div class="chips" role="toolbar" aria-label="Filter">
+      <button class="chip" data-f="all" aria-pressed="true">All</button>
+      {hs.map((h) => <button class="chip" data-f={`house:${h.id}`} aria-pressed="false">{h.data.name}</button>)}
+      {ps.some((p) => p.data.mode === "rent") && <button class="chip" data-f="mode:rent" aria-pressed="false">For rent</button>}
+      {[...new Set(ps.flatMap((p) => p.data.tags))].slice(0, 8).map((t) => <button class="chip" data-f={`tag:${t}`} aria-pressed="false">{t[0].toUpperCase() + t.slice(1)}</button>)}
+    </div>
+    <div class="grid" style="margin-top:16px" id="grid">
+      {ps.map((p, i) => <Card p={p} house={byId[p.data.house.id]} eager={i < 4} />)}
+    </div>
+  </section>
+
+  <section class="how" aria-label="How it works">
+    <div><h3>Build your cart</h3><p class="muted">Pick sizes, choose rental dates. Your cart stays on your phone.</p></div>
+    <div><h3>Send on WhatsApp</h3><p class="muted">One tap sends your order, with an order code, to each house.</p></div>
+    <div><h3>We close the trade</h3><p class="muted">We confirm stock, delivery and payment with you, person to person.</p></div>
+  </section>
+</Shell>
+
+<script>
+  const chips = document.querySelectorAll<HTMLButtonElement>(".chip[data-f]");
+  const cards = document.querySelectorAll<HTMLElement>("#grid .card");
+  const n = document.getElementById("n")!;
+  function apply(f: string) {
+    const [k, v] = f.split(":");
+    let shown = 0;
+    cards.forEach((c) => {
+      const ok = f === "all" || (k === "house" && c.dataset.house === v) || (k === "mode" && c.dataset.mode === v) || (k === "tag" && c.dataset.tags!.split(" ").includes(v));
+      c.hidden = !ok;
+      if (ok) shown++;
+    });
+    chips.forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.f === f)));
+    n.textContent = `${shown} piece${shown === 1 ? "" : "s"}`;
+  }
+  chips.forEach((c) => c.addEventListener("click", () => {
+    const go = () => apply(c.dataset.f!);
+    (document as any).startViewTransition ? (document as any).startViewTransition(go) : go();
+  }));
+</script>

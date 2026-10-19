@@ -1,0 +1,34 @@
+---
+import Shell from "../layouts/Shell.astro";
+import Card from "../components/Card.astro";
+import { houses, products, href } from "../lib/shop";
+
+const hs = await houses();
+const byId = Object.fromEntries(hs.map((h) => [h.id, h]));
+const ps = await products();
+---
+<Shell title="Saved" tab="saved">
+  <section class="hero"><h1>Saved</h1></section>
+  <div class="grid sec" id="grid">{ps.map((p) => <Card p={p} house={byId[p.data.house.id]} />)}</div>
+  <div class="empty" id="empty" hidden>
+    <h2>Nothing saved yet</h2>
+    <p>Tap the heart on anything you like and it waits for you here, even offline.</p>
+    <a class="btn" href={href()}>Browse the shop</a>
+  </div>
+</Shell>
+
+<script>
+  import { saved } from "../scripts/store";
+  function show() {
+    const s = saved.all();
+    let n = 0;
+    document.querySelectorAll<HTMLElement>("#grid .card").forEach((c) => {
+      const on = s.includes(c.querySelector<HTMLElement>("[data-save]")!.dataset.save!);
+      c.hidden = !on;
+      if (on) n++;
+    });
+    document.getElementById("empty")!.hidden = n > 0;
+  }
+  addEventListener("shop:change", show);
+  show();
+</script>

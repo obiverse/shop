@@ -1,0 +1,96 @@
+---
+import "../styles/global.css";
+import Icon from "../components/Icon.astro";
+import { shop, href } from "../lib/shop";
+
+type Props = {
+  title?: string;
+  description?: string;
+  image?: string; // absolute or site-relative
+  tab?: "shop" | "rent" | "saved" | "cart" | "";
+  back?: boolean;
+  head?: boolean; // render extra <head> slot
+};
+const { title, description = shop.tagline, image = href("og.png"), tab = "", back = false } = Astro.props;
+const full = title ? `${title} · ${shop.name}` : `${shop.name} · Sandals, scents & rentals`;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const og = new URL(image, Astro.site).href;
+const tabs = [
+  { id: "shop", label: "Shop", to: "", icon: "shop" },
+  { id: "rent", label: "Rent", to: "rent/", icon: "rent" },
+  { id: "saved", label: "Saved", to: "saved/", icon: "heart" },
+  { id: "cart", label: "Cart", to: "cart/", icon: "cart" },
+] as const;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{full}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:site_name" content={shop.name} />
+    <meta property="og:title" content={title ?? shop.name} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={og} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#f5efe6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#12100e" media="(prefers-color-scheme: dark)" />
+    <link rel="manifest" href={href("manifest.webmanifest")} />
+    <link rel="icon" href={href("icons/64.png")} />
+    <link rel="apple-touch-icon" href={href("icons/apple-180.png")} />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content={shop.short} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" />
+    <slot name="head" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href={href()}><img src={href("icons/192.png")} alt="" width="32" height="32" />{shop.short}</a>
+        {back && <a class="iconbtn back" href={href()} onclick="if(history.length>1&&document.referrer.includes(location.host)){history.back();return false}" aria-label="Back"><Icon name="back" /></a>}
+        <nav aria-label="Main">
+          {tabs.map((t) => (
+            <a href={href(t.to)} aria-current={tab === t.id ? "page" : undefined}>
+              {t.label}{t.id === "cart" && <span class="count" data-cart-count hidden>0</span>}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap"><slot /></main>
+
+    <footer class="site">
+      <div class="wrap">
+        <span>{shop.name} · every order is confirmed with you on WhatsApp before you pay.</span>
+        <a href="https://obiverse.github.io">Made by Obiverse</a>
+      </div>
+    </footer>
+
+    <nav class="tabs" aria-label="App">
+      {tabs.map((t) => (
+        <a href={href(t.to)} aria-current={tab === t.id ? "page" : undefined}>
+          <Icon name={t.icon} />{t.label}{t.id === "cart" && <span class="count" data-cart-count hidden>0</span>}
+        </a>
+      ))}
+    </nav>
+
+    <div class="sheet" id="install" hidden role="dialog" aria-label="Install the app">
+      <img src={href("icons/192.png")} alt="" />
+      <p><b>Get the {shop.short} app.</b> <span class="and">Fast, works offline, no app store.</span><span class="ios">Tap Share, then “Add to Home Screen”.</span></p>
+      <button class="btn" data-install>Install</button>
+      <button class="iconbtn" data-dismiss aria-label="Not now"><Icon name="close" /></button>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      import "../scripts/app";
+    </script>
+  </body>
+</html>

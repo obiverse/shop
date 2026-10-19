@@ -1,0 +1,41 @@
+---
+import Shell from "../layouts/Shell.astro";
+---
+<Shell title="Verify order" description="Re-price an order against today's catalogue.">
+  <Fragment slot="head"><meta name="robots" content="noindex" /></Fragment>
+  <section class="hero">
+    <div class="k">For the team</div>
+    <h1 style="margin-top:10px">Verify order</h1>
+    <p>This order was re-priced just now against today's catalogue. If the WhatsApp message disagrees with this page, this page is right.</p>
+  </section>
+  <div id="state"></div>
+  <div id="out"></div>
+  <div class="actions" id="act" hidden><button class="btn ghost grow" id="copy">Copy order summary</button></div>
+</Shell>
+
+<script>
+  import { load, decode, money } from "../scripts/ledger";
+  import { groups } from "../scripts/render";
+  import { toast } from "../scripts/app";
+
+  const state = document.getElementById("state")!;
+  const out = document.getElementById("out")!;
+
+  async function show() {
+    const { ledger, catalog } = await load();
+    const items = decode(location.hash.slice(1));
+    if (!items.length) { state.innerHTML = `<div class="notice">No order in this link. Open the Verify link from the customer's WhatsApp message.</div>`; out.innerHTML = ""; return; }
+    const q = ledger.quote(items);
+    state.innerHTML = q.ok
+      ? `<div class="notice ok">Every line is valid and in the catalogue today.</div>`
+      : `<div class="notice">Some lines need attention: sold out, removed, or dates no longer free.</div>`;
+    out.innerHTML = groups(q, catalog, { edit: false });
+    document.getElementById("act")!.hidden = false;
+    document.getElementById("copy")!.onclick = () => {
+      const t = q.houses.map((h) => `${h.code} · ${h.name} · ${money(h.total, h.currency)}\n` + q.lines.filter((l) => l.house === h.house).map((l) => `- ${l.qty} × ${l.title}${l.opt ? ` (${l.opt})` : ""}${l.from ? ` ${l.from}→${l.to}` : ""}${l.error ? ` [${l.error}]` : ""}`).join("\n")).join("\n\n");
+      navigator.clipboard?.writeText(t).then(() => toast("Copied"));
+    };
+  }
+  addEventListener("hashchange", show);
+  show();
+</script>

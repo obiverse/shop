@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.astro/
+crates/ledger/target/
+.DS_Store
+.env*
+scripts/studio/.lift
+
+# raw photos and fliers: source material, may carry GPS; never published
+assets/

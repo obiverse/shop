@@ -1,0 +1,97 @@
+---
+import Shell from "../layouts/Shell.astro";
+import { href } from "../lib/shop";
+---
+<Shell title="Cart" tab="cart">
+  <section class="hero"><h1>Your cart</h1></section>
+  <div id="who" hidden>
+    <div class="who">
+      <label class="field">Your name<input name="name" autocomplete="name" placeholder="So we know who's writing" /></label>
+      <label class="field">Delivery or notes<textarea name="note" placeholder="Area / city, when you need it, gift wrap…"></textarea></label>
+    </div>
+    <p class="muted" style="margin-top:12px;font-size:.9rem">Each house gets its own message with an order code. Nothing is charged here. We confirm everything with you on WhatsApp.</p>
+  </div>
+
+  <div id="out" aria-live="polite"><p class="muted">Pricing your cart…</p></div>
+
+  <div class="empty" id="empty" hidden>
+    <h2>Your cart is empty</h2>
+    <p>Add sandals, scents or a rental and send the whole thing to us on WhatsApp.</p>
+    <a class="btn" href={href()}>Start shopping</a>
+  </div>
+
+  <div class="notice ok" id="sent" hidden>
+    <span id="sent-msg"></span>
+    <div class="actions"><button class="btn" id="clear-sent">Yes, clear them</button><button class="btn ghost" id="keep">Keep for now</button></div>
+  </div>
+</Shell>
+
+<script>
+  import { cart, profile } from "../scripts/store";
+  import { load } from "../scripts/ledger";
+  import { groups } from "../scripts/render";
+  import { buzz } from "../scripts/app";
+
+  const out = document.getElementById("out")!;
+  const who = document.getElementById("who")!;
+  const empty = document.getElementById("empty")!;
+  const sent = document.getElementById("sent")!;
+  const name = document.querySelector<HTMLInputElement>("[name=name]")!;
+  const note = document.querySelector<HTMLTextAreaElement>("[name=note]")!;
+  const verify = new URL(`${import.meta.env.BASE_URL}order/`, location.origin).href;
+  let lastSent = "";
+
+  const p = profile.get();
+  name.value = p.name;
+  note.value = p.note;
+  const keep = () => profile.set({ name: name.value, note: note.value });
+  name.addEventListener("input", keep);
+  note.addEventListener("input", keep);
+
+  async function draw() {
+    const items = cart.all();
+    empty.hidden = items.length > 0;
+    who.hidden = items.length === 0;
+    if (!items.length) { out.innerHTML = ""; return; }
+    try {
+      const { ledger, catalog } = await load();
+      out.innerHTML = groups(ledger.quote(items), catalog, { edit: true });
+    } catch {
+      out.innerHTML = `<div class="notice">Couldn't load prices. Check your connection and try again.</div>`;
+    }
+  }
+
+  out.addEventListener("click", async (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>("button");
+    if (!b) return;
+    const items = cart.all();
+    if (b.dataset.i) {
+      const i = Number(b.dataset.i);
+      if (b.dataset.d === "x") items.splice(i, 1);
+      else items[i].qty = Math.max(0, items[i].qty + Number(b.dataset.d));
+      buzz();
+      cart.set(items);
+      return;
+    }
+    if (b.dataset.send) {
+      const { ledger, catalog } = await load();
+      const house = catalog.houses.find((h) => h.id === b.dataset.send)!;
+      const mine = items.filter((i) => catalog.products.find((p) => p.id === i.id)?.house === house.id);
+      const text = ledger.message(mine, house.id, verify, name.value, note.value);
+      open(`https://wa.me/${house.whatsapp}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+      lastSent = house.id;
+      document.getElementById("sent-msg")!.textContent = `Sent to ${house.name}? Clear those items from your cart once they've replied.`;
+      sent.hidden = false;
+    }
+  });
+
+  document.getElementById("clear-sent")!.addEventListener("click", async () => {
+    const { catalog } = await load();
+    cart.clear(catalog.products.filter((p) => p.house === lastSent).map((p) => p.id));
+    sent.hidden = true;
+  });
+  document.getElementById("keep")!.addEventListener("click", () => (sent.hidden = true));
+
+  addEventListener("shop:change", (e) => (e as CustomEvent).detail === "obv.cart" && draw());
+  draw();
+</script>

@@ -1,0 +1,11 @@
+---
+import Shell from "../layouts/Shell.astro";
+import { href } from "../lib/shop";
+---
+<Shell title="Offline">
+  <div class="empty">
+    <h2>You're offline</h2>
+    <p>Pages you've opened before still work, and your cart is safe on your phone. Send it when you're back online.</p>
+    <a class="btn" href={href("cart/")}>Open cart</a>
+  </div>
+</Shell>

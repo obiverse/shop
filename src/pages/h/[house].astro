@@ -1,0 +1,24 @@
+---
+import Shell from "../../layouts/Shell.astro";
+import Card from "../../components/Card.astro";
+import { Image } from "astro:assets";
+import { houses, products } from "../../lib/shop";
+
+export async function getStaticPaths() {
+  return (await houses()).map((h) => ({ params: { house: h.id }, props: { h } }));
+}
+const { h } = Astro.props;
+const ps = await products((p) => p.data.house.id === h.id);
+---
+<Shell title={h.data.name} description={h.data.tagline} image={h.data.lookbook?.src} back>
+  <section class="house" style={`--h:${h.data.accent};margin-top:16px;min-height:220px`}>
+    <div class="k">House</div>
+    <h1 style="color:#fff">{h.data.name}</h1>
+    <p>{h.data.story}</p>
+  </section>
+  <section class="sec">
+    <div class="sechead"><h2>{ps.length} pieces</h2></div>
+    <div class="grid">{ps.map((p, i) => <Card p={p} house={h} eager={i < 4} />)}</div>
+  </section>
+  {h.data.lookbook && <Image class="lookbook sec" src={h.data.lookbook} alt={`${h.data.name} lookbook`} widths={[600, 1000, 1400]} sizes="(min-width: 1180px) 1148px, 100vw" />}
+</Shell>

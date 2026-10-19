@@ -1,0 +1,20 @@
+{
+  "name": "obiverse-shop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ledger": "cd crates/ledger && cargo test -q && wasm-pack build --release --target web --out-dir ../../src/ledger-pkg --no-typescript --no-pack && rm -f ../../src/ledger-pkg/.gitignore",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "ship": "sh scripts/ship.sh",
+    "studio": "sh scripts/studio/studio.sh"
+  },
+  "engines": {
+    "node": ">=22.22"
+  },
+  "dependencies": {
+    "astro": "7.4.0",
+    "sharp": "^0.35.5"
+  }
+}

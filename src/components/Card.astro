@@ -1,0 +1,26 @@
+---
+import { Picture } from "astro:assets";
+import Icon from "./Icon.astro";
+import { href, money, stockLabel, type Product, type House } from "../lib/shop";
+
+type Props = { p: Product; house: House; eager?: boolean };
+const { p, house, eager = false } = Astro.props;
+const { title, price, compare_at, mode, stock, images } = p.data;
+const cur = house.data.currency;
+const badge = mode === "rent" ? "For rent" : stock === "in" ? "" : stockLabel[stock];
+---
+<a class="card" href={href(`p/${p.id}/`)} data-house={house.id} data-mode={mode} data-tags={p.data.tags.join(" ")}>
+  <div class="ph">
+    <Picture src={images[0]} alt={title} widths={[240, 360, 480, 720]} sizes="(min-width: 1040px) 280px, (min-width: 700px) 33vw, 50vw" formats={["avif", "webp"]} loading={eager ? "eager" : "lazy"} />
+    {badge && <span class:list={["badge", { rent: mode === "rent" }]}>{badge}</span>}
+    <button class="heart" data-save={p.id} aria-pressed="false" aria-label={`Save ${title}`}><Icon name="heart" /></button>
+  </div>
+  <div class="m">
+    <div class="k">{house.data.name}</div>
+    <div class="t">{title}</div>
+    <div class="pr">
+      {money(price, cur)}{mode === "rent" && <span class="muted"> / day</span>}
+      {compare_at && <s>{money(compare_at, cur)}</s>}
+    </div>
+  </div>
+</a>

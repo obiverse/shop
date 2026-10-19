@@ -1,0 +1,200 @@
+---
+import { Picture, getImage } from "astro:assets";
+import { render } from "astro:content";
+import Shell from "../../layouts/Shell.astro";
+import Icon from "../../components/Icon.astro";
+import Card from "../../components/Card.astro";
+import { products, houseOf, href, money, stockLabel, iso, type Product } from "../../lib/shop";
+
+export async function getStaticPaths() {
+  return (await products()).map((p) => ({ params: { slug: p.id }, props: { p } }));
+}
+const { p } = Astro.props as { p: Product };
+const h = await houseOf(p);
+const d = p.data;
+const cur = h.data.currency;
+const { Content } = await render(p);
+const rent = d.mode === "rent";
+const priceText = money(d.price, cur) + (rent ? " / day" : "");
+const og = await getImage({ src: d.images[0], width: 1200, height: 630, fit: "cover", format: "jpeg" });
+const more = (await products((x) => x.data.house.id === h.id && x.id !== p.id)).slice(0, 4);
+const today = new Date().toISOString().slice(0, 10);
+const booked = (d.rent?.booked ?? []).filter((r) => iso(r.to) >= today);
+const fmt = (x: Date) => x.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+const units = d.rent?.units;
+const unit = d.rent?.unit ?? "item";
+const max = rent ? (units ?? 1) : 20;
+---
+<Shell title={d.title} description={`${priceText} · ${d.summary}`} image={og.src} back>
+  <Fragment slot="head">
+    <meta property="og:type" content="product" />
+    <meta property="product:price:amount" content={String(d.price)} />
+    <meta property="product:price:currency" content={cur} />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org", "@type": "Product", name: d.title, description: d.summary,
+      image: new URL(og.src, Astro.site).href, brand: h.data.name,
+      offers: { "@type": "Offer", price: d.price, priceCurrency: cur, availability: `https://schema.org/${d.stock === "out" ? "OutOfStock" : d.stock === "made_to_order" ? "PreOrder" : "InStock"}` },
+    })} />
+    {d.model && <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.4.0/dist/model-viewer.min.js" />}
+  </Fragment>
+
+  <article class="pdp" data-id={p.id} data-mode={d.mode} data-stock={d.stock} data-unit={unit} data-price={d.price * 100} data-deposit={(d.rent?.deposit ?? 0) * 100} data-cur={cur}>
+    <div class="gallery">
+      <div class="slides" id="slides">
+        {d.images.map((img, i) => (
+          <Picture src={img} alt={`${d.title}, photo ${i + 1}`} widths={[480, 720, 1080, 1440]} sizes="(min-width: 900px) 600px, 100vw" formats={["avif", "webp"]} loading={i === 0 ? "eager" : "lazy"} fetchpriority={i === 0 ? "high" : "auto"} />
+        ))}
+        {d.model && (
+          <div><model-viewer src={href(d.model)} alt={`${d.title} in 3D`} camera-controls auto-rotate ar touch-action="pan-y" shadow-intensity="1" /></div>
+        )}
+      </div>
+      <div class="dots" id="dots">{[...d.images, ...(d.model ? [1] : [])].map((_, i) => <i class:list={{ on: i === 0 }} />)}</div>
+    </div>
+
+    <div class="info">
+      <a class="k" href={href(`h/${h.id}/`)}>{h.data.name}</a>
+      <h1>{d.title}</h1>
+      <div class="price">
+        {money(d.price, cur)}{rent && <small> per {unit} per day</small>}
+        {d.compare_at && <s>{money(d.compare_at, cur)}</s>}
+      </div>
+      {rent ? (
+        <div class="stock" data-s="in">
+          {units ? `${units} ${unit}s available · ` : ""}{d.rent?.deposit ? `refundable deposit ${money(d.rent.deposit, cur)} each · ` : ""}minimum {d.rent?.min_days ?? 1} day{(d.rent?.min_days ?? 1) > 1 ? "s" : ""}
+        </div>
+      ) : (
+        <div class="stock" data-s={d.stock}>{stockLabel[d.stock]}{d.lead_days && ` · ready in about ${d.lead_days} days`}</div>
+      )}
+      <p class="summary">{d.summary}</p>
+
+      <form id="add">
+        {d.options.map((o) => (
+          <fieldset>
+            <legend>{o.name}</legend>
+            <div class="opts">
+              {o.values.map((v, i) => (
+                <label><input type="radio" name={o.name} value={v} required checked={o.values.length === 1 && i === 0} /><span>{v}</span></label>
+              ))}
+            </div>
+          </fieldset>
+        ))}
+
+        {rent && (
+          <fieldset>
+            <legend>Rental dates</legend>
+            <div class="dates">
+              <label class="field">From<input type="date" name="from" min={today} required /></label>
+              <label class="field">To<input type="date" name="to" min={today} required /></label>
+            </div>
+            <div class="avail" id="avail" aria-live="polite"></div>
+            <div class="estimate" id="estimate" aria-live="polite"></div>
+            {booked.length > 0 && <p class="booked">Already booked: {booked.map((r) => `${fmt(r.from)}–${fmt(r.to)}${r.qty && units ? ` (${r.qty} ${unit}s)` : ""}`).join(" · ")}</p>}
+          </fieldset>
+        )}
+
+        <div class="buy">
+          <div class="qty" aria-label="Quantity">
+            <button type="button" data-q={units ? "-10" : "-1"} aria-label="Fewer">−</button>
+            <input id="qty" name="qty" type="number" inputmode="numeric" min="1" max={max} value={units ? Math.min(50, units) : 1} aria-label={`How many${rent ? ` ${unit}s` : ""}`} />
+            <button type="button" data-q={units ? "10" : "1"} aria-label="More">+</button>
+          </div>
+          <button class="btn grow" id="addbtn" disabled={d.stock === "out"}>{d.stock === "out" ? "Sold out" : rent ? "Add rental" : "Add to cart"}</button>
+        </div>
+      </form>
+
+      <div class="actions">
+        <button class="btn ghost grow" data-save={p.id} aria-pressed="false"><Icon name="heart" />Save</button>
+        <button class="btn ghost grow" data-share={new URL(href(`p/${p.id}/`), Astro.site).href} data-title={`${d.title} — ${priceText}`}><Icon name="share" />Share</button>
+      </div>
+
+      <div class="perks">
+        <div><b>01</b><span>Your order goes to {h.data.name} on WhatsApp. Nothing is charged here.</span></div>
+        <div><b>02</b><span>We confirm stock, delivery and the final price with you before you pay.</span></div>
+        {rent && (d.rent?.deposit ?? 0) > 0 && <div><b>03</b><span>Deposit is refunded when the item comes back as it left.</span></div>}
+        {rent && <div><b>{(d.rent?.deposit ?? 0) > 0 ? "04" : "03"}</b><span>We confirm your dates and hold them once agreed. Delivery and collection are arranged with you.</span></div>}
+      </div>
+
+      <div class="prose sec"><Content /></div>
+    </div>
+  </article>
+
+  {more.length > 0 && (
+    <section class="sec">
+      <div class="sechead"><h2>More from {h.data.name}</h2><a href={href(`h/${h.id}/`)}>See all</a></div>
+      <div class="grid">{more.map((x) => <Card p={x} house={h} />)}</div>
+    </section>
+  )}
+</Shell>
+
+<script>
+  import { cart } from "../../scripts/store";
+  import { load, money } from "../../scripts/ledger";
+  import { toast, buzz } from "../../scripts/app";
+
+  const art = document.querySelector<HTMLElement>(".pdp")!;
+  const id = art.dataset.id!;
+  const rent = art.dataset.mode === "rent";
+  const form = document.getElementById("add") as HTMLFormElement;
+  const qtyEl = document.getElementById("qty") as HTMLInputElement;
+  const estimate = document.getElementById("estimate");
+  const { unit, cur } = art.dataset as Record<string, string>;
+  const qtyNow = () => Math.max(1, Math.min(Number(qtyEl.max), Math.round(Number(qtyEl.value) || 1)));
+  const btn = document.getElementById("addbtn") as HTMLButtonElement;
+  const avail = document.getElementById("avail");
+
+  // Gallery dots follow the swipe.
+  const slides = document.getElementById("slides")!;
+  const dots = [...document.querySelectorAll("#dots i")];
+  slides.addEventListener("scroll", () => {
+    const i = Math.round(slides.scrollLeft / slides.clientWidth);
+    dots.forEach((d, j) => d.classList.toggle("on", i === j));
+  }, { passive: true });
+
+  form.querySelectorAll<HTMLButtonElement>("[data-q]").forEach((b) => b.addEventListener("click", () => {
+    qtyEl.value = String(Math.max(1, Math.min(Number(qtyEl.max), qtyNow() + Number(b.dataset.q))));
+    if (rent) check();
+  }));
+  qtyEl.addEventListener("change", () => { qtyEl.value = String(qtyNow()); });
+
+  // Rentals: the ledger checks minimum days and clashes as dates change.
+  async function check() {
+    if (!rent || !avail) return true;
+    const f = new FormData(form);
+    const from = String(f.get("from") || ""), to = String(f.get("to") || "");
+    if (!from || !to) { avail.textContent = ""; if (estimate) estimate.textContent = ""; return false; }
+    const { ledger } = await load();
+    const qty = qtyNow();
+    const r = ledger.dates(id, from, to, qty) as { ok: boolean; days: number; free: number; error?: string };
+    avail.dataset.ok = String(r.ok);
+    const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+    avail.textContent = r.ok ? `Available · ${plural(r.days, "day")}${r.free > 1 ? ` · ${r.free} ${unit}s free` : ""}` : r.error ?? "";
+    if (estimate) {
+      const q = ledger.quote([{ id, qty, opt: "", from, to }]) as { lines: { total: number; deposit: number }[] };
+      const l = q.lines[0];
+      estimate.textContent = r.ok ? `${plural(qty, unit)} × ${plural(r.days, "day")} = ${money(l.total, cur)}${l.deposit ? ` + ${money(l.deposit, cur)} refundable deposit` : ""}` : "";
+    }
+    return r.ok;
+  }
+  if (rent) {
+    form.addEventListener("change", check);
+    load(); // warm the ledger while they choose
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!form.reportValidity()) return;
+    if (!(await check())) { toast("Choose dates that are free"); return; }
+    const f = new FormData(form);
+    const opt = [...form.querySelectorAll("fieldset legend")]
+      .map((l) => l.textContent!)
+      .filter((n) => n !== "qty")
+      .filter((n) => f.has(n))
+      .map((n) => `${n} ${f.get(n)}`)
+      .join(", ");
+    cart.add({ id, qty: qtyNow(), opt, from: String(f.get("from") || ""), to: String(f.get("to") || "") });
+    buzz();
+    btn.textContent = "Added ✓";
+    toast("Added to cart");
+    setTimeout(() => (btn.textContent = rent ? "Add rental" : "Add to cart"), 1600);
+  });
+</script>

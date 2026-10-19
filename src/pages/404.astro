@@ -1,0 +1,11 @@
+---
+import Shell from "../layouts/Shell.astro";
+import { href } from "../lib/shop";
+---
+<Shell title="Not found">
+  <div class="empty">
+    <h2>This one sailed away</h2>
+    <p>The piece may have sold out or moved. Everything we have is in the shop.</p>
+    <a class="btn" href={href()}>Back to the shop</a>
+  </div>
+</Shell>

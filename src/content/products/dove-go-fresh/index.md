@@ -1,0 +1,12 @@
+---
+title: "Dove Go Fresh Deodorant"
+house: scents
+mode: buy
+price: 6000 # PLACEHOLDER — confirm
+summary: "Pomegranate and lemon verbena. 48-hour protection with moisturising cream."
+images: [./1.jpg, ./photo-1.jpg]
+order: 8
+tags: [women, body]
+---
+
+Antiperspirant spray with ¼ moisturising cream. 48-hour protection.
