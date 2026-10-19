@@ -1,0 +1,138 @@
+# Sveltia CMS — the team edits products here; every save is a commit to obiverse/shop.
+# Sign in with a GitHub fine-grained token (Contents: read & write on obiverse/shop only).
+# After saving, run `pnpm ship` (or let the auto-ship cron do it) to publish.
+backend:
+  name: github
+  repo: obiverse/shop
+  branch: main
+  commit_messages:
+    create: "Add {{collection}} “{{slug}}”"
+    update: "Update {{collection}} “{{slug}}”"
+    delete: "Remove {{collection}} “{{slug}}”"
+    uploadMedia: "Upload “{{path}}”"
+    deleteMedia: "Delete “{{path}}”"
+
+site_url: https://obiverse.github.io/shop/
+logo_url: https://obiverse.github.io/shop/icons/192.png
+media_folder: public/uploads
+public_folder: /shop/uploads
+
+media_libraries:
+  default:
+    config:
+      max_file_size: 8000000
+      transformations:
+        raster_image: { format: webp, quality: 85, width: 2000, height: 2000 }
+
+collections:
+  - name: products
+    label: Products
+    label_singular: Product
+    folder: src/content/products
+    path: "{{slug}}/index"
+    media_folder: ""
+    public_folder: ""
+    create: true
+    slug: "{{title}}"
+    summary: "{{title}} · {{house}} · {{price}}{{mode}}"
+    sortable_fields: [title, house, price, order]
+    view_groups: [{ label: House, field: house }, { label: Mode, field: mode }]
+    fields:
+      - { name: title, label: Name, widget: string }
+      - { name: house, label: House, widget: relation, collection: houses, value_field: "{{slug}}", search_fields: [name], display_fields: [name] }
+      - { name: mode, label: Sell or rent, widget: select, options: [{ label: Sell, value: buy }, { label: Rent, value: rent }], default: buy }
+      - { name: price, label: "Price (per day if renting)", widget: number, value_type: float, min: 0 }
+      - name: sale
+        label: "On sale? (overrides the house offer)"
+        widget: object
+        required: false
+        collapsed: true
+        hint: "Set EITHER a sale price OR a percent off. The regular price above is shown struck through until the end date, then it's back to regular automatically."
+        fields:
+          - { name: price, label: Sale price, widget: number, value_type: float, required: false }
+          - { name: percent, label: "Or percent off", widget: number, value_type: int, min: 1, max: 90, required: false }
+          - { name: ends, label: "Ends on (last day of the offer)", widget: datetime, time_format: false, format: YYYY-MM-DD, required: false }
+          - { name: label, label: "Label (e.g. Weekend deal)", widget: string, required: false }
+      - { name: badge, label: "Badge (optional, only if true: Bestseller, New…)", widget: string, required: false }
+      - { name: summary, label: "One-line summary (max 160)", widget: string, pattern: ['^.{1,160}$', "160 characters at most"] }
+      - { name: images, label: Photos, widget: image, multiple: true, hint: "First photo is the cover and the WhatsApp preview. Portrait 4:5 looks best. `pnpm studio` makes these from a phone photo." }
+      - { name: cutout, label: "Cut-out (transparent, from pnpm studio)", widget: image, required: false }
+      - { name: tint, label: "Backdrop colour of the photo", widget: color, required: false }
+      - name: options
+        label: Options (sizes, colours, volumes)
+        widget: list
+        required: false
+        fields:
+          - { name: name, label: Option, widget: string, hint: "e.g. Size" }
+          - { name: values, label: Values, widget: list, hint: "Comma separated, e.g. 39, 40, 41" }
+      - { name: stock, label: Stock, widget: select, options: [{ label: In stock, value: in }, { label: Only a few left, value: low }, { label: Made to order, value: made_to_order }, { label: Sold out, value: out }], default: in }
+      - { name: lead_days, label: "Days to make (made-to-order)", widget: number, value_type: int, required: false }
+      - name: rent
+        label: Rental terms (rent only)
+        widget: object
+        required: false
+        collapsed: true
+        fields:
+          - { name: deposit, label: "Refundable deposit (per unit)", widget: number, value_type: float, default: 0 }
+          - { name: min_days, label: Minimum days, widget: number, value_type: int, default: 1 }
+          - { name: units, label: "How many do we have? (e.g. 300 chairs; leave empty for a single item)", widget: number, value_type: int, required: false }
+          - { name: unit, label: "What is one called? (e.g. chair)", widget: string, default: item }
+          - name: booked
+            label: Booked dates
+            widget: list
+            required: false
+            summary: "{{from}} → {{to}} · {{qty}}"
+            fields:
+              - { name: from, label: From, widget: datetime, time_format: false, format: YYYY-MM-DD }
+              - { name: to, label: To, widget: datetime, time_format: false, format: YYYY-MM-DD }
+              - { name: qty, label: "How many (empty = all)", widget: number, value_type: int, required: false }
+      - { name: tags, label: Tags, widget: list, required: false }
+      - { name: featured, label: Featured (shown first), widget: boolean, default: false }
+      - { name: order, label: Sort order, widget: number, value_type: int, default: 10 }
+      - { name: draft, label: "Hidden (draft)", widget: boolean, default: false }
+      - { name: body, label: Description, widget: markdown }
+
+  - name: houses
+    label: Houses
+    label_singular: House
+    folder: src/content/houses
+    extension: json
+    format: json
+    media_folder: ""
+    public_folder: ""
+    create: true
+    slug: "{{name}}"
+    identifier_field: name
+    fields:
+      - { name: name, label: Name, widget: string }
+      - { name: tagline, label: Tagline, widget: string }
+      - { name: story, label: Story, widget: text }
+      - { name: whatsapp, label: "WhatsApp number (international, e.g. +2349064265750)", widget: string }
+      - { name: currency, label: Currency, widget: select, options: [NGN, USD, GBP, EUR, GHS, KES], default: NGN }
+      - { name: accent, label: Accent colour, widget: color }
+      - { name: gradient, label: "Banner gradient (CSS)", widget: string, required: false }
+      - { name: dark_text, label: "Dark text on the banner (for light colours)", widget: boolean, default: false }
+      - { name: emoji, label: Emoji, widget: string, default: "🛍️" }
+      - name: banner
+        label: Home banner
+        widget: object
+        required: false
+        hint: "{from} is replaced with the lowest current price in this house."
+        fields:
+          - { name: kicker, label: "Small label (e.g. 🔥 Launch offer)", widget: string }
+          - { name: title, label: Headline, widget: string }
+          - { name: text, label: Line under the headline, widget: string }
+          - { name: cta, label: Button text, widget: string }
+      - name: promo
+        label: "House-wide offer (e.g. 15% off everything)"
+        widget: object
+        required: false
+        collapsed: true
+        hint: "Applies to every product in this house that has no sale of its own. Delete it to end the offer early."
+        fields:
+          - { name: label, label: "Label (e.g. Launch offer)", widget: string, default: Sale }
+          - { name: percent, label: Percent off, widget: number, value_type: int, min: 1, max: 90 }
+          - { name: ends, label: "Ends on (last day)", widget: datetime, time_format: false, format: YYYY-MM-DD, required: false }
+      - { name: lineup, label: "Lineup (transparent PNG/WebP of products, for the home card)", widget: image, required: false }
+      - { name: lookbook, label: "Lookbook / flier", widget: image, required: false }
+      - { name: order, label: Sort order, widget: number, value_type: int, default: 1 }
