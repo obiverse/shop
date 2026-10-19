@@ -2,7 +2,7 @@
 title: "Castle Bejar Amorous Oud"
 house: scents
 mode: buy
-price: 20000
+price: 30000
 summary: "Amorous Oud by Castle Bejar Privé, in a wood-grain presentation box. A handsome gift."
 images: [./1.jpg, ./1-photo.jpg]
 cutout: ./cutout.webp

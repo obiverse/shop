@@ -2,7 +2,7 @@
 title: "ARCO Arabian Oud Perfume Oil"
 house: scents
 mode: buy
-price: 9000
+price: 30000
 summary: "Concentrated Arabian oud perfume by Almas Perfume, Mumbai. 100 g, alcohol free."
 images: [./1.jpg, ./1-photo.jpg]
 cutout: ./cutout.webp
