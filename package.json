@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "ship": "sh scripts/ship.sh",
     "studio": "sh scripts/studio/studio.sh",
-    "admin": "astro dev --open /shop/admin/index.html"
+    "admin": "astro dev --open /shop/admin/index.html",
+    "studio:box": "sh scripts/studio/boxshot.sh"
   },
   "engines": {
     "node": ">=22.22"

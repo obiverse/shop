@@ -8,3 +8,4 @@ scripts/studio/.lift
 
 # raw photos and fliers: source material, may carry GPS; never published
 assets/
+scripts/studio/.box
