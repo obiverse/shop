@@ -2,10 +2,8 @@
   "name": "Scent House",
   "tagline": "Premium, authentic, timeless. Perfumes for every chapter.",
   "story": "Eau de parfums from Lattafa, Armaf, Kay Ali, Smart Collection and more, plus everyday body care. Sealed in the box, delivered nationwide.",
-  "whatsapp": "+2349064265750",
-  "copy_to": [
-    "+12409750431"
-  ],
+  "whatsapp": "+12409750431",
+  "copy_to": [],
   "currency": "NGN",
   "accent": "#B4237D",
   "lineup": "./scents-lineup.webp",

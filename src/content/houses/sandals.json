@@ -2,10 +2,8 @@
   "name": "Obi Sandals",
   "tagline": "Premium men's slippers. Local craft, modern style.",
   "story": "Quality leather, durable materials, comfortable all day. Strong soles built to last, a premium finish and quality hardware, made by hand. Nationwide delivery.",
-  "whatsapp": "+2349064265750",
-  "copy_to": [
-    "+12409750431"
-  ],
+  "whatsapp": "+12409750431",
+  "copy_to": [],
   "currency": "NGN",
   "accent": "#FF6A1A",
   "lineup": "./sandals-lineup.webp",
