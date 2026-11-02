@@ -115,6 +115,22 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+/** A WhatsApp link opens one chat, so each extra recipient of an order gets its own tap. */
+export function offerCopies(numbers: string[], text: string) {
+  if (!numbers.length) return;
+  const dlg = document.getElementById("quick") as HTMLDialogElement;
+  const form = document.getElementById("quick-form") as HTMLFormElement;
+  form.onsubmit = null;
+  form.innerHTML = `<div class="qa-body" style="padding-top:18px"><h2>One more tap</h2><p class="muted" style="margin:8px 0 16px;font-weight:600">Send the same order to our second line so nothing is missed.</p>
+    <div style="display:grid;gap:10px">${numbers.map((n) => `<a class="btn wa" target="_blank" rel="noopener" data-copy href="https://wa.me/${n}?text=${encodeURIComponent(text)}">Send a copy to +${n}</a>`).join("")}</div></div>
+    <div class="qa-foot"><button class="btn ghost grow" value="close">Done</button></div>`;
+  form.querySelectorAll<HTMLAnchorElement>("[data-copy]").forEach((a) => a.addEventListener("click", () => {
+    a.textContent = "Copy sent ✓";
+    a.classList.replace("wa", "ghost");
+  }));
+  dlg.showModal();
+}
+
 // ── quick add: no options → straight in; options → a bottom sheet; rentals → the product page (dates)
 async function quickAdd(id: string, img?: HTMLImageElement | null) {
   const { catalog } = await load();

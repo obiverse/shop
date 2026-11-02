@@ -6,7 +6,7 @@ export async function GET() {
   const hs = await houses();
   const ps = await products();
   const body = {
-    houses: hs.map((h) => ({ id: h.id, name: h.data.name, currency: h.data.currency, whatsapp: h.data.whatsapp.replace(/\D/g, ""), accent: h.data.accent })),
+    houses: hs.map((h) => ({ id: h.id, name: h.data.name, currency: h.data.currency, whatsapp: h.data.whatsapp.replace(/\D/g, ""), copies: h.data.copy_to.map((n) => n.replace(/\D/g, "")), accent: h.data.accent })),
     products: await Promise.all(
       ps.map(async (p) => ({
         id: p.id,

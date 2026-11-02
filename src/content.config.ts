@@ -10,6 +10,7 @@ const houses = defineCollection({
     tagline: z.string(),
     story: z.string(),
     whatsapp: z.string().regex(/^\+?[\d\s-]{8,}$/, "International format, e.g. +2348012345678"),
+    copy_to: z.array(z.string().regex(/^\+?[\d\s-]{8,}$/)).default([]), // a WhatsApp link opens one chat, so these get a second tap
     currency: z.enum(["NGN", "USD", "GBP", "EUR", "GHS", "KES"]).default("NGN"),
     accent: z.string().regex(/^#[0-9a-fA-F]{6}$/),
     gradient: z.string().optional(), // CSS gradient for banners and the house header

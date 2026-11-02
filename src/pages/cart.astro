@@ -55,7 +55,7 @@ const areas = ["Ugep", "Calabar", "Lagos", "Abuja", "Port Harcourt", "Uyo", "Oth
   import { cart, profile, orders, type Item, type Order } from "../scripts/store";
   import { load, money, encode, decode, today } from "../scripts/ledger";
   import { groups } from "../scripts/render";
-  import { buzz, toast, confetti } from "../scripts/app";
+  import { buzz, toast, confetti, offerCopies } from "../scripts/app";
 
   const $ = (id: string) => document.getElementById(id)!;
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -102,7 +102,9 @@ const areas = ["Ugep", "Calabar", "Lagos", "Abuja", "Port Harcourt", "Uyo", "Oth
   }
 
   // ── the cart
+  let drawn = 0;
   async function draw() {
+    const run = ++drawn; // only the newest redraw may paint; an older one can finish after it
     const items = cart.all();
     $("n-cart").textContent = items.length ? String(items.length) : "";
     $("n-orders").textContent = orders.all().length ? String(orders.all().length) : "";
@@ -111,6 +113,7 @@ const areas = ["Ugep", "Calabar", "Lagos", "Abuja", "Port Harcourt", "Uyo", "Oth
     if (!items.length) { $("out").innerHTML = ""; more([]); return; }
     try {
       const { ledger, catalog } = await load();
+      if (run !== drawn) return;
       const q = ledger.quote(items);
       $("out").innerHTML = groups(q, catalog, { edit: true });
       $("send").innerHTML = q.houses.map((h) => `<button class="btn wa" data-send="${h.house}" ${h.items ? "" : "disabled"}>
@@ -168,6 +171,7 @@ const areas = ["Ugep", "Calabar", "Lagos", "Abuja", "Port Harcourt", "Uyo", "Oth
     cart.set(items.filter((i) => !mine.includes(i)));
     toast(`Order ${total.code} sent 🎉`);
     setTimeout(() => show("orders"), 900);
+    offerCopies(house.copies, text);
   });
 
   $("share").addEventListener("click", async () => {

@@ -22,7 +22,7 @@ Read [docs/PLAN.md](docs/PLAN.md) for the why.
 | Mark something sold out | Set `stock: out` (or `low`, `made_to_order`). |
 | Hide a product | Set `draft: true`. |
 | Block rental dates | Add `{ from: 2026-12-24, to: 2026-12-27 }` under `rent.booked`. |
-| Change a WhatsApp number | `src/content/houses/<house>.json` |
+| Change a WhatsApp number | `src/content/houses/<house>.json`: `whatsapp` is the main chat; numbers in `copy_to` are offered to the customer as one more tap after sending. |
 | Check an order a customer sent | Tap the **Verify** link at the bottom of their WhatsApp message. |
 | Publish | `pnpm ship` |
 
@@ -69,6 +69,6 @@ Shipping keeps working from this Mac: `pnpm ship` uses the GitHub CLI's saved lo
 ## Team access to the editor
 
 1. Add the teammate as a collaborator on `obiverse/shop`.
-2. They create a fine-grained token: GitHub → Settings → Developer settings → Fine-grained tokens →
-   only `obiverse/shop`, **Contents: Read and write**.
-3. At `/shop/admin/` choose **Sign in with token**.
+2. They create a classic token: GitHub → Settings → Developer settings → Personal access tokens →
+   **Tokens (classic)** → tick **repo**. Fine-grained tokens can't reach a repo on someone else's personal account.
+3. At `/shop/admin/` choose **Sign In Using Access Token**.

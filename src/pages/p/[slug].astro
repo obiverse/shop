@@ -140,7 +140,7 @@ const perks = rent
 <script>
   import { cart, profile, viewed, orders, type Item } from "../../scripts/store";
   import { load, money } from "../../scripts/ledger";
-  import { toast, buzz, fly, confetti } from "../../scripts/app";
+  import { toast, buzz, fly, confetti, offerCopies } from "../../scripts/app";
 
   const art = document.querySelector<HTMLElement>(".pdp")!;
   const { id, unit, cur, house, wa } = art.dataset as Record<string, string>;
@@ -242,5 +242,6 @@ const perks = rent
     orders.add({ code: t.code, house, name: catalog.houses.find((h) => h.id === house)!.name, at: Date.now(), total: money(t.total, t.currency), items: [item], wa });
     confetti();
     toast(`Order ${t.code} sent 🎉`);
+    offerCopies(catalog.houses.find((h) => h.id === house)!.copies, text);
   });
 </script>

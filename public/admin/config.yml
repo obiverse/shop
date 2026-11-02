@@ -108,6 +108,7 @@ collections:
       - { name: tagline, label: Tagline, widget: string }
       - { name: story, label: Story, widget: text }
       - { name: whatsapp, label: "WhatsApp number (international, e.g. +2349064265750)", widget: string }
+      - { name: copy_to, label: "Also send a copy to (WhatsApp numbers; the customer gets a second tap)", widget: list, required: false }
       - { name: currency, label: Currency, widget: select, options: [NGN, USD, GBP, EUR, GHS, KES], default: NGN }
       - { name: accent, label: Accent colour, widget: color }
       - { name: gradient, label: "Banner gradient (CSS)", widget: string, required: false }
